@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 from scipy.special import softmax
 from scipy.spatial.distance import cdist
 from sklearn.metrics import pairwise_distances_argmin_min
+import tqdm
 
 def create_relv_src_dic(srcs_sub_loader, tar_sub_loader, model, relv_feat_dic, relv_sample_dic, relv_label_dic, relv_sample_count, device):
     model.eval()
@@ -345,7 +346,7 @@ def create_clusters_from_source_feat(model, combine_srcs_loader):
     # arr = np.concatenate((arr, np.row_stack(clusters_by_label[4])), axis=0)
     # arr = np.concatenate((arr, np.row_stack(clusters_by_label[5])), axis=0)
     # arr = np.concatenate((arr, np.row_stack(clusters_by_label[6])), axis=0)
-    visualize_feat_clusters(clusters_by_label)
+    # visualize_feat_clusters(clusters_by_label)
     # larger_cluster = k_means(arr)
     # visualize_feat_single_PCA(larger_cluster)
 
@@ -360,8 +361,8 @@ def create_clusters_from_source_feat(model, combine_srcs_loader):
 
     clusters_by_label = make_clusters(feat_memory_bank)
     cluster_centroids = calculate_centroid(clusters_by_label)
-    visualize_feat_PCA(clusters_by_label)
-    visualize_tsne(clusters_by_label)
+    # visualize_feat_PCA(clusters_by_label)
+    # visualize_tsne(clusters_by_label)
 
     # convert dic to string to store clusters into an npy file 
     data = {str(k): v for k, v in cluster_centroids.items()}

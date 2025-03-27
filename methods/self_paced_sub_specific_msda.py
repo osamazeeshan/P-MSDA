@@ -2227,14 +2227,9 @@ def test(model, target_test_loader, batch_size, top_N_tar_evaluate=False, is_pai
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description='Train a network on FER')
-    arg_parser.add_argument('--src1_dataset_path', type=str, default=config.BIOVID_SUB_1_PATH)
-    arg_parser.add_argument('--src2_dataset_path', type=str, default=config.BIOVID_SUB_2_PATH)
-
     arg_parser.add_argument('--src_train_datasets_path', type=str, default=config.BIOVID_SUBS_PATH)
     arg_parser.add_argument('--src_test_datasets_path', type=str, default=config.BIOVID_SUBS_PATH)
 
-    arg_parser.add_argument('--tar_dataset_path', type=str, default=config.BIOVID_SUB_3_PATH)
-    arg_parser.add_argument('--test_tar_dataset_path', type=str, default=config.BIOVID_SUB_3_PATH)
     arg_parser.add_argument('--pain_db_root_path', type=str, default=config.BIOVID_PATH)
 
     arg_parser.add_argument('--pretrained_model', type=str, default='mcmaster_trained_model')
@@ -2280,7 +2275,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--back_bone', default="resnet18", type=str)
     args = arg_parser.parse_args()
 
-
+    #-- BioVid
     # 0. 081014_w_27 [40]
     # 1. 101609_m_36 [70]
     # 2. 112009_w_43 [66]
@@ -2291,5 +2286,12 @@ if __name__ == '__main__':
     # 7. 073109_w_28 [82]
     # 8. 100909_w_65 [13]
     # 9. 081609_w_40 [17]
+    
+    #-- UNBC
+    # 0. 107-hs107 
+    # 1. 109-ib109
+    # 2. 121-vw121
+    # 3. 123-jh123
+    # 4. 115-jy115
     
     main(args)
