@@ -43,3 +43,15 @@ conda env create -f env.yml
 ```
 pip install -r req.txt
 ```
+
+## Biovid Pain and Heat Dataset
+
+```
+Biovid datasets PartA can be downloaded from here: (https://www.nit.ovgu.de/BioVid.html#PubACII17)
+```
+
+## UNBC-McMaster Shoulder Pain Dataset
+
+```
+UNBC-McMaster datasets can be downloaded from here: (https://sites.pitt.edu/~emotion/um-spread.htm)
+```
