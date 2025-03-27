@@ -1,6 +1,6 @@
 # Progrssive Multi-Source Domain Adaptation for Facial Expression Recognition 
 
-Muhammad Osama Zeeshan<sup>1</sup>, Marco Pedersoli<sup>1</sup>, Alessandro Lameiras Koerich<sup>1</sup>, Eric Granger<sup>1</sup>
+Muhammad Osama Zeeshan<sup>1</sup>, Marco Pedersoli<sup>1</sup>, Alessandro Lameiras Koerich<sup>2</sup>, Eric Granger<sup>1</sup>
 
 <sup>1</sup>LIVIA and ILLS, Dept. of Systems Engineering, ETS Montreal, Canada <br />
 <sup>2</sup>Dept. of Software Engineering, ETS Montreal, Canada
