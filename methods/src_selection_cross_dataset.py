@@ -109,9 +109,6 @@ def calculate_src_tar_dist(source_list_name, target_subject, eliminate_list, tra
         subject_list = write_srcs_tar_txt_files_using_list(args.src_train_datasets_path, args.pain_label_path, subject_list, target_subject, args.n_class, target_file_path, args.oracle_setting, args.pain_tar_label_path)
         srcs_file_name, tar_file_name, _ = get_srcs_tar_name_using_list(subject_list, args.src_train_datasets_path, target_subject, args.n_class, args.oracle_setting)
 
-        # subject_list = write_srcs_tar_txt_files_using_list(args.src_train_datasets_path, config.MCMASTER_FULL_LABEL_PATH, subject_list, target_subject, args.n_class, args.oracle_setting)
-        # srcs_file_name, tar_file_name, _ = get_srcs_tar_name_using_list(subject_list, args.src_train_datasets_path, target_subject, args.n_class, args.oracle_setting)
-
         # srcs_file_name = 'mcmaster_list_full.txt'   # to train model for McMaster to use as a pre-trained model
         combine_srcs_loader, combine_srcs_val_loader, combine_srcs_test_loader = BaseDataset.load_pain_dataset(args.pain_db_root_path, os.path.join(target_file_path, srcs_file_name), None, args.batch_size, phase='src')
         tar_loader, tar_val_loader, tar_test_loader  = BaseDataset.load_pain_dataset(args.pain_tar_db_root_path, os.path.join(target_file_path, tar_file_name), None, args.batch_size, phase='tar')
@@ -143,9 +140,6 @@ def calculate_src_sampl_tar_dist(source_list_name, target_subject, transfer_mode
     subject_list = write_srcs_tar_txt_files_using_list(args.src_train_datasets_path, args.pain_label_path, subject_list, target_subject, args.n_class, target_file_path, args.oracle_setting)
     srcs_file_name, tar_file_name, _ = get_srcs_tar_name_using_list(subject_list, args.src_train_datasets_path, target_subject, args.n_class, args.oracle_setting)
 
-    # subject_list = write_srcs_tar_txt_files_using_list(args.src_train_datasets_path, config.MCMASTER_FULL_LABEL_PATH, subject_list, target_subject, args.n_class, args.oracle_setting)
-    # srcs_file_name, tar_file_name, _ = get_srcs_tar_name_using_list(subject_list, args.src_train_datasets_path, target_subject, args.n_class, args.oracle_setting)
-
     # srcs_file_name = 'mcmaster_list_full.txt'   # to train model for McMaster to use as a pre-trained model
     combine_srcs_loader, combine_srcs_val_loader, combine_srcs_test_loader = BaseDataset.load_pain_dataset(args.pain_db_root_path, os.path.join(target_file_path, srcs_file_name), None, 100, phase='src')
     tar_loader, tar_val_loader, tar_test_loader  = BaseDataset.load_pain_dataset(args.pain_db_root_path, os.path.join(target_file_path, tar_file_name), None, 100, phase='tar')
@@ -172,7 +166,6 @@ def get_closest_src_sample_tar(closest_loaded_arrays, relv_sample_count):
     closest_src_samples_arr = closest_src_samples_arr[relv_indices]
     closest_src_labels_arr = np.array(closest_src_labels)
     closest_src_labels_arr = closest_src_labels_arr[relv_indices]
-
 
     return closest_src_samples_arr, closest_src_labels_arr
 
@@ -231,7 +224,6 @@ def main(args):
     # comet create experiment name
     set_comet_exp_name(experiment, args.top_s, args.source_combined, len(source_list_name), target_subject)
     target_file_path, target_weight_path, timestamp = create_target_folders(config.CURRENT_DIR, args.weights_folder, target_subject, args.top_timestamp if args.target_evaluation_only else None)
-
 
     # Selection of top source subjects w.r.t each target using N classifier 
     if args.train_N_source_classes and selected_sub == 0:
@@ -611,11 +603,8 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
     best_acc = 0
     stop = 0
     srcs_avg_features = []
-    clusters_by_label = {}
-    feat_memory_bank = {}
     threshold = 0.91
 
-    # tar_loader_for_PL = data_loader2
     # tar_loader = data_loader2
     calculate_tar_pl_ce = False
     train_total_loss_all_epochs = 0
@@ -623,7 +612,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
     # SupConCriterion = SupConLoss()
     current_forzen_model = copy.deepcopy(model)
 
-    # train_source = False # remove this line ; ITS ONLY THERE TO PERFORM EXPERIMENTS ON THE MMD LOSS FOR DOMAIN SHIFT FOR GDA FOR DGA-1033 PRESENTATION
     for e in range(n_epoch):
         stop += 1
         train_loss_clf, train_loss_transfer, train_loss_total = 0, 0, 0
@@ -639,71 +627,18 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
                 threshold = threshold - 0.01      
                 print(" To: ", threshold)
 
-                # ***** replace tar_loader_for_PL with data_loader2 to load all the samples everytime it calculates target PL
-                # _data_arr, _prob_arr, _label_arr, _gt_arr, non_conf_data_arr, non_conf_label_arr = create_target_pl_dicts(model, tar_loader_for_PL, threshold, args.batch_size, args.is_pain_dataset)
-                # # _data_arr, _prob_arr, _label_arr, _gt_arr = generate_tar_aug_conf_pl(model, tar_loader_for_PL, threshold)
-                # # if len(_data_arr) <= 0:
-                # #     threshold = threshold - 0.06
-                # if len(_data_arr) > 0:
-                #     for i in range(0,1):
-                #         if len(_data_arr) > 0:
-                #             # _data_arr, tar_exp_gt_labels, _, _ = BaseDataset.expand_target_dataset(_data_arr, _gt_arr, data_loader1, args.batch_size) if args.expand_tar_dataset else _data_arr, _gt_arr, _, _
-                #             target_wth_gt_labels = TensorDataset(torch.tensor(_data_arr), torch.tensor(_gt_arr))
-                #             tar_loader, tar_val_loader = BaseDataset.load_target_data(target_wth_gt_labels, args.batch_size, split=False)
-                #             _data_arr, _prob_arr, _label_arr, _gt_arr, non_conf_data_arr_du, non_conf_label_arr_du = create_target_pl_dicts(model, tar_loader, threshold, args.batch_size, args.is_pain_dataset)
-                #             # non_conf_data_arr = np.concatenate((non_conf_data_arr, non_conf_data_arr_du), axis=0)
-                #             # non_conf_label_arr = np.concatenate((non_conf_label_arr, non_conf_label_arr_du), axis=0)
-                            
-                #             # _data_arr, _prob_arr, _label_arr, _gt_arr = generate_tar_aug_conf_pl(model, tar_loader, threshold)
-                #     if len(_data_arr) > 0:
-                #         if args.expand_tar_dataset:
-                #             tar_exp_data = BaseDataset.expand_target_dataset(_data_arr, _gt_arr, data_loader1, args.batch_size, _label_arr, _prob_arr)
-                #             tar_ext_data_arr, tar_ext_gt_arr, _label_arr, _prob_arr = tar_exp_data["_data_arr"],  tar_exp_data["_gt_arr"], tar_exp_data["_label_arr"], tar_exp_data["_prob_arr"] 
-                #         else:
-                #             tar_ext_data_arr, tar_ext_gt_arr = _data_arr, _gt_arr
-                        
-                #         # tar_ext_data_arr = np.concatenate((_data_arr, non_conf_data_arr), axis=0)
-                #         # tar_ext_gt_arr = np.concatenate((_gt_arr, non_conf_label_arr), axis=0)
-                #         # _label_arr = np.concatenate((_label_arr, non_conf_label_arr), axis=0)
-                        
-                #         target_wth_labels = TensorDataset(torch.tensor(_data_arr), torch.tensor(_label_arr), torch.tensor(_prob_arr), torch.tensor(_gt_arr))
-                #         # target_wth_labels = TensorDataset(torch.tensor(tar_ext_data_arr), torch.tensor(_label_arr), torch.tensor(tar_ext_gt_arr))
-                        
-                #         tar_loader, tar_val_loader = BaseDataset.load_target_data(target_wth_labels, args.batch_size, split=False)
-                #         calculate_tar_pl_ce = True
-                #         # data_loader2 = tar_loader
-                #         # n_batch = min(len(data_loader1), len(tar_loader))
-
-                #         target_for_PL = TensorDataset(torch.tensor(_data_arr), torch.tensor(_gt_arr))
-                #         tar_loader_for_PL, _ = BaseDataset.load_target_data(target_for_PL, args.batch_size, split=False)
-                
-
         model.train()
         
         count = 0
         total_mmd = 0
         srcs_avg_features = []
-        clusters_by_label = {}
-        feat_memory_bank = {}
-        feat_memory_bank_tar = {}
-        gt_arr = []
-        tar_arr = []
-        # tar_pl_batch = len(_data_arr)/args.batch_size
         tar_counter = 0
         
-        # conf_tar_data_iter = TragetRestartableIterator(tar_loader)
         tar_data_iter = TragetRestartableIterator(data_loader2)
         n_batch = min(len(data_loader1), len(prev_src_loader))
 
         for (domain1, prev_src_domain) in zip(data_loader1, prev_src_loader):
-            # data_source, label_source = src
-            # data_target, _ = tar
-            # data_source, label_source = data_source.cuda(), label_source.cuda()
-            # data_target = data_target.cuda()
             count = count + 1  
-
-            ### --- *** defining for conf target samples
-            # domain2 = next(conf_tar_data_iter)
 
             ### --- *** Current Source Subject
             data_domain1, label_domain1 = domain1
@@ -715,8 +650,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
 
             ### --- *** Target Subject
             tar_domain = next(tar_data_iter)
-            # tar_data_domain, _ = tar_domain
-            # tar_data_domain = tar_data_domain.cuda()
 
             # -- Generate target PL in minibatch
             if train_source is False and oracle_setting is False:
@@ -730,7 +663,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
                     if len(conf_data_arr) <= 0:
                         calculate_tar_pl_ce = False
                         break
-
             
              # defining for domain-2
             if train_source or oracle_setting:
@@ -744,68 +676,12 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
                     data_domain2, label_domain2 = tar_domain
                 
                 data_domain2, label_domain2 = data_domain2.cuda(), label_domain2.cuda()
-                # print(label_domain2)
-                
-                # data_domain2, _ = domain2
-                # data_domain2 = data_domain2.cuda()
-
-            # macs, params =profile(model, inputs=(data_domain1.float(), data_domain2.float()))
 
             # for training the custom dataset (PAIN DATASETS); I have added .float() otherwise removed it when using build-in dataset
             data_domain1 = data_domain1.float()
             data_domain2 = data_domain2.float()
             prev_data_domain = prev_data_domain.float()
             prev_label_domain = prev_label_domain.to(torch.int64)
-            # tar_data_domain = tar_data_domain.float()
-
-            # store feature vector and label into an feature_memory_bank
-            # domain1_feature = model.forward_features(data_domain1)
-            # domain2_feature = model.forward_features(data_domain2)
-            
-            # # # feat_memory_bank = np.concatenate((feat_memory_bank, np.column_stack((domain1_feature.cpu().detach().numpy(), label_domain1.cpu().detach().numpy()))), axis=0) if len(feat_memory_bank) > 0 else np.column_stack((domain1_feature.cpu().detach().numpy(), label_domain1.cpu().detach().numpy()))
-            
-            # feat_memory_bank = np.concatenate((feat_memory_bank, domain1_feature.cpu().detach().numpy()), axis=0) if len(feat_memory_bank) > 0 else domain1_feature.cpu().detach().numpy()
-            # gt_arr.extend(label_domain1.detach().cpu().numpy())
-
-            # feat_memory_bank_tar = np.concatenate((feat_memory_bank_tar, domain2_feature.cpu().detach().numpy()), axis=0) if len(feat_memory_bank_tar) > 0 else domain2_feature.cpu().detach().numpy()
-            # tar_arr.extend(np.full(16, 5))
-            # tar_arr.extend(label_domain2.detach().cpu().numpy())
-
-            # for i in range(0, n_class):
-            #     indices = [index for index, label in enumerate(label_domain1) if label == i]
-            #     indices2 = [index for index, label in enumerate(label_domain2) if label == i]
-            #     intra_class_feat_d1 = data_domain1[indices]
-            #     intra_class_feat_d2 = data_domain2[indices2]
-            #     intra_label = label_domain1[indices]
-
-            #     if len(data_domain2[indices2]) > 0 and len(data_domain1[indices]) > 0:
-            #         label_source_pred, transfer_loss, domain1_feature = model(intra_class_feat_d1, intra_class_feat_d2)
-            #         clf_loss = criterion(label_source_pred, intra_label)
-            #     elif len(data_domain1[indices]) > 0:
-            #         label_source_pred, transfer_loss, domain1_feature = model(intra_class_feat_d1, None)
-            #         clf_loss = criterion(label_source_pred, intra_label)
-            #     else:
-            #         clf_loss = 0
-            #         transfer_loss = None
-
-            #     transfer_loss = transfer_loss.detach().item() if transfer_loss is not None and transfer_loss.detach().item() == transfer_loss.detach().item() else 0 # to avoid 'NaN'
-            #     loss = loss + (clf_loss) + transfer_loss
-
-
-            # tensor = torch.randn(1, 3, 100, 100)
-            # start_t = time.time()
-            # model(tensor.cuda().float(), tensor.cuda().float())
-            # print("Training Time:")
-            # print(start_t)
-            # end_t = time.time() - start_t
-            # print(end_t)   
-
-            # optimizer.zero_grad()
-            ''' 
-            Test-1000: 
-                only considered target PL for adaptaion (MMD+PL) and does not converge on tar subject
-                label_source_pred, transfer_loss, domain1_feature = model(data_domain1, data_domain2 if calculate_tar_pl_ce else None)
-            '''
 
             # calculate target PL loss only with conf samples
             clf_loss, prev_clf_loss, transfer_loss = 0, 0, 0
@@ -820,38 +696,17 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
             else:
                 label_source_pred, prev_transfer_loss, _ = model(data_domain1, prev_data_domain)
                 clf_loss = criterion(label_source_pred, label_domain1)
-
-                # added prev source loss always
-                # prev_label_source_pred, _, _ = model(prev_data_domain, None)
-                # prev_clf_loss = criterion(prev_label_source_pred, prev_label_domain)
-
-            #----- ALL MMD: calculate mmd loss with prev source sub
-            # prev_label_source_pred, prev_transfer_loss, _ = model(prev_data_domain, data_domain1)
-            # prev_clf_loss = criterion(prev_label_source_pred, prev_label_domain)
-
-            # label_source_pred, transfer_loss, domain1_feature = model(data_domain1, data_domain2)
-            # clf_loss = criterion(label_source_pred, label_domain1)
-            # transfer_loss = transfer_loss.detach().item() if transfer_loss and transfer_loss.detach().item() == transfer_loss.detach().item() else 0 # to avoid 'NaN'
-
-            # loss = (clf_loss) + lamb * transfer_loss
                
             prev_transfer_loss = prev_transfer_loss.detach().item() if prev_transfer_loss and prev_transfer_loss.detach().item() == prev_transfer_loss.detach().item() else 0 # to avoid 'NaN'
             loss = (clf_loss) + prev_clf_loss + transfer_loss + (lamb*prev_transfer_loss)
 
-            
-            # loss = (clf_loss) 
-
             total_mmd += transfer_loss 
-            # loss.backward()
 
             # adding target loss with source loss
             if train_source or oracle_setting:
                 label_pred_domain2, transfer_loss_domain2, domain2_feature  = model(data_domain2, data_domain1)
                 clf_loss_domain2 = criterion(label_pred_domain2, label_domain2)
                 loss_domain2 = (clf_loss_domain2) + lamb * transfer_loss_domain2
-
-                # loss.backward(retain_graph=True) # param: retain_graph=True if wanted to backpropogate two losses separately
-                # loss_domain2.backward()
 
                 """
                     combine source-1 and source-2 loss
@@ -883,7 +738,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
             train_loss_clf = clf_loss.detach().item() if clf_loss else 0 + prev_clf_loss.detach().item() if prev_clf_loss else 0 + train_loss_clf
             train_loss_transfer = transfer_loss + prev_transfer_loss + train_loss_transfer
             train_loss_total = train_loss_clf + train_loss_transfer
-            # train_loss_total = combine_loss.detach().item() + train_loss_total
 
             # target loss_clf
             if train_source:
@@ -891,34 +745,7 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
                 train_loss_transfer_domain2 = transfer_loss_domain2.detach().item() + train_loss_transfer_domain2
                 train_loss_total_domain2 = loss_domain2.detach().item() + train_loss_total_domain2
 
-                # train_loss_clf_domain2 = (clf_loss.detach().item() + clf_loss_domain2.detach().item())/2 + train_loss_clf_domain2
-                # # train_loss_transfer_domain2 = transfer_loss_domain2.detach().item() + train_loss_transfer_domain2
-                # train_loss_transfer_domain2 = 0
-                # train_loss_total_domain2 = combine_loss.detach().item() + train_loss_total_domain2
-
-                # ONLY FOR SOURCE_COMBINE
-                # train_loss_clf_domain2 = clf_loss.detach().item() + train_loss_clf_domain2
-                # # train_loss_transfer_domain2 = transfer_loss_domain2.detach().item() + train_loss_transfer_domain2
-                # train_loss_transfer_domain2 = 0
-                # train_loss_total_domain2 = train_loss_total_domain2
-        
-        # clusters_by_label = make_clusters(feat_memory_bank)
-        # cluster_centers = calculate_centroid(clusters_by_label)
-        # visualize_feat_PCA_all(clusters_by_label)
-        # visualize_tsne(clusters_by_label)
-        # visualize_feat_single_PCA(clusters_by_label[0])
-        # visualize_feat_single_PCA(clusters_by_label[1])
-        # visualize_feat_single_PCA(clusters_by_label[3])
-        # visualize_feat_single_PCA(clusters_by_label[4])
-        # visualize_feat_single_PCA(clusters_by_label[5])
-        # visualize_feat_single_PCA(clusters_by_label[6])
-        # train_acc, train_acc_top2 = test(model, tar_loader, args.batch_size, args.is_pain_dataset)
-        # acc, acc_top2 = test_4_param(model, tar_loader, args.batch_size, args.is_pain_dataset)
         acc = test(model, val_loader, args.batch_size, False, args.is_pain_dataset)
-
-        # if e % 5 == 0:
-        #     plot_tsne_graph_scr_tar(feat_memory_bank, feat_memory_bank, gt_arr, None)
-        #     plot_tsne_graph_scr_tar(feat_memory_bank_tar, feat_memory_bank_tar, tar_arr, None)
         
         if train_loss_clf_domain2 > 0:
             print(f'Epoch: [{e:2d}/{n_epoch}], train_src_loss_clf: {train_loss_clf/n_batch:.4f}, train_tar_pl_loss_clf: {train_loss_clf_domain2/len(tar_loader):.4f}, transfer_loss: {train_loss_transfer/n_batch:.4f}, total_Loss: {train_loss_total/n_batch:.4f}, acc: {acc:.4f}')
@@ -938,7 +765,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
         if best_acc < acc:
             best_acc = acc
             torch.save(model.state_dict(), target_weight_path + '/' + trained_model_name + '.pkl')
-            # torch.save(model.state_dict(), config.CURRENT_DIR + '/' + trained_model_name + 'FER_model.pt')
             torch.save({'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict()}, target_weight_path + '/' + trained_model_name + '_load.pt')
             # save source feature maps
             if len(srcs_avg_features) > 0:
@@ -947,10 +773,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
             stop = 0
         if stop >= early_stop:
             break
-    print(total_mmd)
-    # _data_arr, _prob_arr, _label_arr, _gt_arr = create_target_pl_dicts(model, tar_loader_for_PL, threshold, args.batch_size, args.is_pain_dataset)
-
-    # visualize_tsne(clusters_by_label)
     print("Best Val Acc: ", best_acc)
     train_total_loss_all_epochs = train_total_loss_all_epochs/n_epoch
     return model, train_total_loss_all_epochs
@@ -973,7 +795,6 @@ def measure_src_samples_tar_dist(model, srcs_sub_loader, tar_sub_loader, dist_me
         n_batch = len(srcs_sub_loader)
 
         for src_data, src_gt in tqdm(srcs_sub_loader, leave=False):
-            # count = count + 1  
 
             target = next(tar_data_iter)
 
@@ -986,8 +807,6 @@ def measure_src_samples_tar_dist(model, srcs_sub_loader, tar_sub_loader, dist_me
             tar_data = tar_data.cuda()
             tar_data = tar_data.float()
             tar_feat = model.forward_features(tar_data)
-
-            # concat_features = torch.cat([concat_features, tar_feat], dim=0) if len(concat_features) > 0 else tar_feat 
 
             if dist_measure == config.MMD_SIMILARITY:
                 mmd_dist = mmd(src_feat, tar_feat)
@@ -1002,13 +821,6 @@ def measure_src_samples_tar_dist(model, srcs_sub_loader, tar_sub_loader, dist_me
 
 
     np.savez(tar_name, closest_src_samples=closest_src_samples, closest_src_labels=closest_src_labels, closest_src_dists=closest_src_dists)
-
-    # batches = min(len(srcs_sub_loader), len(tar_sub_loader))
-    # total_dist = total_dist / batches
-    # print(total_dist)
-    # return closest_src_samples, closest_src_labels
-
-    # feat_memory_bank = np.concatenate((feat_memory_bank, np.column_stack((features.cpu().detach().numpy(), target.cpu().detach().numpy()))), axis=0) if len(feat_memory_bank) > 0 else np.column_stack((features.cpu().detach().numpy(), target.cpu().detach().numpy()))
 
 def measure_srcs_tar_dist(model, srcs_sub_loader, tar_sub_loader, dist_measure, batch_size):
     model.eval()
@@ -1044,7 +856,6 @@ def measure_srcs_tar_dist(model, srcs_sub_loader, tar_sub_loader, dist_measure, 
                 tensor2_probs = F.softmax(tar_feat, dim=1)
                 total_dist = total_dist + F.kl_div(tensor1_probs.log(), tensor2_probs, reduction='batchmean')
 
-    # print(cosine_dist)
     batches = min(len(srcs_sub_loader), len(tar_sub_loader))
     total_dist = total_dist / batches
     print(total_dist)
