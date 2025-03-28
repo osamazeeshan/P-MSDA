@@ -68,5 +68,5 @@ sh scripts/run.sh GPU=1 Top_s=10
 Run training on cross-dataset: Source -> UNBC-McMaster and Target -> Biovid
 
 ```
-sh scripts/run_cross_db.sh GPU=1 Top_s=10 
+sh scripts/run_cross.sh GPU=1 Top_s=10 
 ```
