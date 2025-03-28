@@ -58,21 +58,14 @@ UNBC-McMaster datasets can be downloaded from here: (https://sites.pitt.edu/~emo
 
 ## How to run the code
 
-Biovid target adaptation training
+Run target adaptation training on Biovid or UNBC datasets
 
 ```
-sh scripts/run_biovid.sh GPU=1 Top_s=10 
-
-```
-
-UNBC-McMaster target adaptation training
-
-```
-sh scripts/run_unbc.sh GPU=1 Top_s=10 
+sh scripts/run.sh GPU=1 Top_s=10 
 
 ```
 
-Cross-dataset: Source -> UNBC-McMaster and Target -> Biovid
+Run training on cross-dataset: Source -> UNBC-McMaster and Target -> Biovid
 
 ```
 sh scripts/run_cross_db.sh GPU=1 Top_s=10 
