@@ -34,14 +34,14 @@ conda create --name <env> --file <this file>
 ### Using conda
 
 ```
-conda env create -f env.yml
+conda env create -f environment.yml
 ```
 
 
 ### Using pip
 
 ```
-pip install -r req.txt
+pip install -r requirements.txt
 ```
 
 ## Biovid Pain and Heat Dataset
@@ -54,4 +54,26 @@ Biovid datasets PartA can be downloaded from here: (https://www.nit.ovgu.de/BioV
 
 ```
 UNBC-McMaster datasets can be downloaded from here: (https://sites.pitt.edu/~emotion/um-spread.htm)
+```
+
+## How to run the code
+
+Biovid target adaptation training
+
+```
+sh scripts/run_biovid.sh GPU=1 Top_s=10 
+
+```
+
+UNBC-McMaster target adaptation training
+
+```
+sh scripts/run_unbc.sh GPU=1 Top_s=10 
+
+```
+
+Cross-dataset: Source -> UNBC-McMaster and Target -> Biovid
+
+```
+sh scripts/run_cross_db.sh GPU=1 Top_s=10 
 ```

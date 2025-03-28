@@ -229,7 +229,7 @@ def main(args):
     prev_src_sub_model = ''
 
     # comet create experiment name
-    set_comet_exp_name(experiment, args.top_k, args.source_combined, len(source_list_name), target_subject)
+    set_comet_exp_name(experiment, args.top_s, args.source_combined, len(source_list_name), target_subject)
     target_file_path, target_weight_path, timestamp = create_target_folders(config.CURRENT_DIR, args.weights_folder, target_subject, args.top_timestamp if args.target_evaluation_only else None)
 
 
@@ -277,7 +277,7 @@ def main(args):
             relv_sample_count = relv_sample_count + 2000
 
     elif not args.target_evaluation_only:
-        while selected_sub < args.top_k:
+        while selected_sub < args.top_s:
             if args.train_N_source_classes and args.train_with_dist_measure:
                 if target_subject in source_list_name:
                     source_list_name.remove(target_subject)
@@ -557,7 +557,7 @@ def train(dataloaders, model, optimizer, lamb, source_model_name, tar_model_name
         experiment.log_parameter("ImageNet weights", True)
         experiment.log_parameter("Pre-trained Model", args.pretrained_model)
         experiment.log_parameter("Source subjects combine", args.source_combined)
-        experiment.log_parameter("Subject selection Top k", args.top_k)
+        experiment.log_parameter("Subject selection Top_s", args.top_s)
         experiment.log_parameter("Time stamp", timestamp)
         experiment.log_parameter("Distance measure", dist_mapping(dist_measure))
         experiment.log_parameter("Train using N classifier", args.train_N_source_classes)
@@ -1132,7 +1132,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--source_combined', type=str, default=False)
     arg_parser.add_argument('--is_pain_dataset', type=bool, default=True)
     arg_parser.add_argument('--dist_measure', type=str, default=config.COSINE_SIMILARITY)
-    arg_parser.add_argument('--top_k', type=int, default=19)
+    arg_parser.add_argument('--top_s', type=int, default=19)
     arg_parser.add_argument('--n_class', type=int, default=2) # 6 for unbc and 2 for pain Biovid -- n_class = 77: to train a classifier with N source subject classes
     arg_parser.add_argument('--n_class_N_src', type=int, default=77)
     arg_parser.add_argument('--top_rev_src_sam', type=int, default=31000)

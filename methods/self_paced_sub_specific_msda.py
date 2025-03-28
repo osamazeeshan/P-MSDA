@@ -186,8 +186,6 @@ def get_top_closest_target_subject(transfer_model, target_file_path, tar_file_na
 
     # target evaluation on trianed source model
     top_srcs_train = test(transfer_model, tar_loader, args.batch_size, True, args.is_pain_dataset)
-    # top_srcs_val = test(transfer_model, tar_val_loader, args.batch_size, True, args.is_pain_dataset)
-    # top_srcs_test = test(transfer_model, tar_test_loader, args.batch_size, True, args.is_pain_dataset)
 
     # get subject name from subject Ids
     top_subname_dic = map_subid_to_subname(config.BIOVID_SUBID_TO_SUBNAME_MAPPING, top_srcs_train)
@@ -229,7 +227,7 @@ def main(args):
     unbc_target_subject_list = ['107-hs107', '109-ib109', '121-vw121', '123-jh123', '115-jy115'] 
     
     target_subject = target_random_list[args.tar_subject] # 081609_w_40 # 101609_m_36 # 073109_w_28
-    print(target_subject)
+    print("== Target Subject: ",target_subject)
 
     # ---------------------------------- ----------------------------------- #
 
@@ -253,7 +251,7 @@ def main(args):
     prev_src_sub_model = ''
 
     # comet create experiment name
-    set_comet_exp_name(experiment, args.top_k, args.source_combined, len(source_list_name), target_subject)
+    set_comet_exp_name(experiment, args.top_s, args.source_combined, len(source_list_name), target_subject)
     target_file_path, target_weight_path, timestamp = create_target_folders(config.CURRENT_DIR, args.weights_folder, target_subject, args.top_timestamp if args.target_evaluation_only else None)
 
 
@@ -275,9 +273,6 @@ def main(args):
 
         subject_list = write_srcs_tar_txt_files_using_list(args.src_train_datasets_path, config.BIOVID_REDUCE_LABEL_PATH, subject_list, target_subject, args.n_class, target_file_path, args.oracle_setting)
         srcs_file_name, tar_file_name, _ = get_srcs_tar_name_using_list(subject_list, args.src_train_datasets_path, target_subject, args.n_class, args.oracle_setting)
-        
-        # transfer_model, optimizer = initialize_model(args, os.path.join(config.CURRENT_DIR, config.WEIGHTS_FOLDER + '/' + srcs_file_name.split('.')[0]), args.load_source, args.n_class, pretrained_model_name = None) # pretrained_model_name = args.pretrained_model
-
         transfer_model, test_model_name, _BEST_VAL_ACC, is_ignore_model, prev_src_sub_model = domain_adaptation(srcs_file_name, tar_file_name, transfer_model, optimizer, target_subject, count_subs, test_model_name, target_file_path, target_weight_path, timestamp, args.dist_measure, _BEST_VAL_ACC, is_ignore_model, prev_src_sub_model)
     
     if args.train_w_src_sm:
@@ -306,20 +301,7 @@ def main(args):
             relv_sample_count = relv_sample_count + 2000
 
     elif not args.target_evaluation_only:
-        while selected_sub < args.top_k:
-
-            # if selected_sub == 0 :  # THIS IS FOR 77 SOURCES ADAPTED TO TARGET '081609_w_40'
-            #     src_tar_dist_dic = {'083109_m_60': 0.6030410408973694, '102309_m_61': 0.6049227381861487, '072414_m_23': 0.6055345017176408, '081714_m_36': 0.6074512179081256, '080709_m_24': 0.6074585939039949, '110909_m_29': 0.6077407480196189}
-            # else:
-            # if selected_sub == 0 :  # THIS IS FOR 77 SOURCES ADAPTED TO TARGET '101609_m_36'
-            #     src_tar_dist_dic = {'072414_m_23': 0.604693013888139, '082714_m_22': 0.6072624758817255, '082208_w_45': 0.6078853152180446, '120514_w_56': 0.60897833609399, '112914_w_51': 0.6090267573604147, '081714_m_36': 0.6091837791296152, '102414_w_58': 0.6094778052723134, '080709_m_24': 0.6096465734184765}
-            # else:
-            
-            # if selected_sub == 0 :  # THIS IS FOR 77 SOURCES ADAPTED TO TARGET '101609_m_36'
-            #     # src_tar_dist_dic = {'082208_w_45': 0.604693013888139, '092514_m_50': 0.6072624758817255, '101015_w_43': 0.6078853152180446, '092509_w_51': 0.6091837791296152, '101908_m_61': 0.6094778052723134}   
-                
-            #     src_tar_dist_dic = {'082109_m_53': 0.604693013888139, '082814_w_46': 0.6072624758817255, '071614_m_20': 0.6078853152180446, '100417_m_44': 0.6091837791296152, '100214_m_50': 0.6094778052723134, '082809_m_26': 0.6096465734184765, '072714_m_23': 0.6097465734184765, '111914_w_63': 0.6098465734184765, '083114_w_55': 0.6099465734184765, '082909_m_47': 0.6099965734184765}   
-            
+        while selected_sub < args.top_s:
             if args.train_N_source_classes and args.train_with_dist_measure:
                 if target_subject in source_list_name:
                     source_list_name.remove(target_subject)
@@ -358,15 +340,10 @@ def main(args):
             else:
                 src_tar_dist_dic = calculate_src_tar_dist(source_list_name, target_subject, eliminate_list, transfer_model, args.cs_threshold, target_file_path, args.dist_measure)
                 src_subjects = list(src_tar_dist_dic.keys())
-        
-        # src_tar_dist_dic = dict(sorted(src_tar_dist_dic.items(), key=lambda x:x[1]))
-        # src_keys_list = [key for key in src_tar_dist_dic.keys()] # extract the selected subjects and add to the eliminate list to avoid these subjects next time
-        
+    
             for src_key in src_subjects:
                 eliminate_list.append(src_key)
-            # eliminate_list = eliminate_list[0] # this is to avoid double list [[]]
 
-            # src_subjects = list(src_tar_dist_dic.keys())
             selected_sub = selected_sub + len(src_subjects)
 
             '''
@@ -428,86 +405,22 @@ def main(args):
         srcs_file_name='lab_srcs3_083013w47_112809w23_only.txt'
         transfer_model, test_model_name, _BEST_VAL_ACC, is_ignore_model, prev_src_sub_model, _, _, _, _ = domain_adaptation(srcs_file_name, None, tar_file_name, transfer_model, optimizer, target_subject, count_subs, test_model_name, target_file_path, target_weight_path, timestamp, args.dist_measure, _BEST_VAL_ACC, is_ignore_model, prev_src_sub_model)
 
-
-    # transfer_model.load_state_dict(torch.load(target_weight_path + '/' + test_model_name + '.pkl'))
-    # # acc_test, acc_top2 = test(transfer_model, dataloaders['tar_test'], args.batch_size)
-    # # if args.train_source:
-    # if args.train_source and not args.target_evaluation_only: 
-    #     train_loader = dataloaders['combine_srcs']
-    #     val_loader = dataloaders['combine_srcs_val']
-    #     test_loader = dataloaders['combine_srcs_test']
-    # else:
-    #     train_loader = dataloaders['tar']
-    #     val_loader = dataloaders['tar_val']
-    #     test_loader = dataloaders['tar_test']
-
-    # acc, acc_top2 = test(transfer_model, train_loader, args.batch_size, args.train_source, args.is_pain_dataset)
-    # acc_val, acc_top2 = test(transfer_model, val_loader, args.batch_size, args.train_source, args.is_pain_dataset)
-    # acc_test, acc_top2 = test(transfer_model, test_loader, args.batch_size, args.train_source, args.is_pain_dataset)
-
-    # # to generate t_sne graph
-    # # _data_arr, _prob_arr, _label_arr, _gt_arr, tcl_clusters = create_target_pl_dicts(transfer_model, dataloaders['tar_val'], 0.00, args.batch_size, args.is_pain_dataset)
-    # print(f'Target Accuracy: {acc}')
-    # print(f'Target Val Accuracy: {acc_val}')
-    # print(f'Target Test Accuracy: {acc_test}')
-
-    # --------------------------------- To Generate t-SNE graph --------------------------
-
-    # ---------- FOR SImpAI ------------------
-
-    # simpai_feat_labels = torch.load(config.CURRENT_DIR + '/features_with_labels_all.pt')
-    # simpai_labels = simpai_feat_labels['predicted_labels']
-    # simpai_feats = torch.cat(simpai_feat_labels['feature_tensor'], dim=0)
-
-    # plot_tsne_graph_scr_tar(simpai_feats.detach().cpu().numpy(), simpai_feats.detach().cpu().numpy(), simpai_labels, simpai_labels)
-
-    # ------------------ -----------------------
-    
-    # print("\n GENERATED T-SNE \n")
-    # var_plot_tsne_graph(combine_srcs_loader)
-    # tsne_guthub_main(src1_loader)
-
-    # transfer_model.load_state_dict(torch.load(config.CURRENT_DIR + '/' + source_model_name + '.pkl'))
-    # generate_tsne(transfer_model, combine_srcs_loader, tar_loader, transfer_model)
-    # _data_arr, _prob_arr, _label_arr, _gt_arr, tcl_clusters = create_target_pl_dicts(transfer_model, tar_loader, 0.95, args.batch_size, args.is_pain_dataset)
-
-    # print("\n GENERATED T-SNE \n")
-    # var_plot_tsne_graph(combine_srcs_loader)
-    # tsne_guthub_main(src1_loader)
-
-    # --------------------------------- To Generate t-SNE graph --------------------------
-    
-    # lamb = 0.1 # weight for transfer loss, it is a hyperparameter that needs to be tuned
-    # if not args.target_evaluation_only:        
-    #     train(dataloaders, transfer_model, optimizer, lamb, source_model_name, tar_model_name, args)
-
-def domain_adaptation(srcs_file_name, prev_srcs_file_name, tar_file_name, transfer_model, optimizer, target_subject, count_subs, test_model_name, target_file_path, target_weight_path, timestamp, dist_measure, _BEST_VAL_ACC, is_ignore_model, prev_src_sub_model, relv_feat_arr, relv_src_data_arr, relv_src_label_arr, prev_relv_samples_struc, closest_src_samples_arr, closest_src_labels_arr):
-     # srcs_file_name = 'mcmaster_list_full.txt'   # to train model for McMaster to use as a pre-trained model
-    # tar_file_name = 'lab_srcs2_w37_tar_w40.txt'
-    # is_ignore_model = False
+def domain_adaptation(srcs_file_name, prev_srcs_file_name, tar_file_name, transfer_model, optimizer, 
+                      target_subject, count_subs, test_model_name, target_file_path, target_weight_path, 
+                      timestamp, dist_measure, _BEST_VAL_ACC, is_ignore_model, prev_src_sub_model, relv_feat_arr, 
+                      relv_src_data_arr, relv_src_label_arr, prev_relv_samples_struc, closest_src_samples_arr, 
+                      closest_src_labels_arr):
     
     combine_srcs_loader, combine_srcs_val_loader, combine_srcs_test_loader = BaseDataset.load_pain_dataset(args.pain_db_root_path, os.path.join(target_file_path, srcs_file_name), None, args.batch_size, phase='src')
     tar_loader, tar_val_loader, tar_test_loader  = BaseDataset.load_pain_dataset(args.pain_db_root_path, os.path.join(target_file_path, tar_file_name), None, args.batch_size, phase='tar')
-
 
     source_model_name = srcs_file_name.split('.')[0]
     tar_model_name = tar_file_name.split('.')[0] + "_oracle" if args.oracle_setting else tar_file_name.split('.')[0] 
     lamb = 0.5 # weight for transfer loss, it is a hyperparameter that needs to be tuned
 
-    # create data loader for current source subject
-    # if prev_srcs_file_name:
-    #     prev_srcs_loader, prev_srcs_val_loader, curr_srcs_test_loader = BaseDataset.load_pain_dataset(args.pain_db_root_path, os.path.join(target_file_path, prev_srcs_file_name), None, args.batch_size, phase='src')
-        # tar_loader, tar_val_loader, tar_test_loader  = BaseDataset.load_pain_dataset(args.pain_db_root_path, os.path.join(target_file_path, tar_file_name), None, args.batch_size, phase='tar')
-    
-    # prev_srcs_loader_dic.extend(combine_srcs_loader)
-    # relv_sample_count = len(combine_srcs_loader)*args.batch_size
     relv_sample_count = 2000
     # *** *** Selection of relevant source samples --- ****
     if args.accumulate_prev_source_subs:
-        # relv_sample_count = len(combine_srcs_loader)*args.batch_size
-        # relv_feat_arr, relv_src_data_arr, relv_src_label_arr = create_relv_src_dic(combine_srcs_loader, tar_loader, transfer_model, relv_feat_arr, relv_src_data_arr, relv_src_label_arr, relv_sample_count)
-        # relv_feat_arr, relv_src_data_arr, relv_src_label_arr = create_relv_src_clusters(combine_srcs_loader, tar_loader, transfer_model, relv_feat_arr, relv_src_data_arr, relv_src_label_arr, relv_sample_count, timestamp  + '/' + tar_model_name, is_before_adapt=True)
-
         # if len(relv_src_data_arr) > 0 and len(relv_src_label_arr):
         if prev_relv_samples_struc:
             relv_src_data_arr = [point[0] for point in prev_relv_samples_struc if point[0] is not None]
@@ -540,7 +453,6 @@ def domain_adaptation(srcs_file_name, prev_srcs_file_name, tar_file_name, transf
 
     # load last trained model
     if test_model_name is not None:
-        # transfer_model.load_state_dict(torch.load(target_weight_path + '/' + test_model_name + '.pkl'))
         if is_ignore_model:
             test_model_name = prev_src_sub_model
 
@@ -550,13 +462,6 @@ def domain_adaptation(srcs_file_name, prev_srcs_file_name, tar_file_name, transf
             target_trained_model = torch.load(target_weight_path + '/' + test_model_name  + '_load.pt')
             transfer_model.load_state_dict(target_trained_model['model_state_dict'])
             optimizer.load_state_dict(target_trained_model['optimizer_state_dict'])
-
-        # temp_src_sub_model = test_model_name
-    # else:
-    #     # test: we initialize the model kth trained model and introduced the top-k subject again, to check if it performs better
-    #     target_trained_model = torch.load('/home/ens/AS08960/Self_Paced_MSDA_FER/WeightFiles/10-081609_w_40/1720416479/weights/lab_srcs2_101809m59_tar_081609w40_load.pt')
-    #     transfer_model.load_state_dict(target_trained_model['model_state_dict'])
-    #     optimizer.load_state_dict(target_trained_model['optimizer_state_dict']) 
     
     if not args.target_evaluation_only:        
         transfer_model, each_sub_train_total_loss = train(dataloaders, transfer_model, optimizer, lamb, source_model_name, tar_model_name, target_subject, target_weight_path, timestamp, dist_measure, args, relv_sample_count)
@@ -573,8 +478,6 @@ def domain_adaptation(srcs_file_name, prev_srcs_file_name, tar_file_name, transf
     else:
         test_model_name = tar_model_name
     
-    # test_model_name = 'lab_srcs4_072414m23_082714m22_110909m29_tar_073109w28_load'
-
     # transfer_model.load_state_dict(torch.load(target_weight_path + '/' + test_model_name + '.pkl'))
     transfer_model, optimizer = initialize_model(args, None, args.load_source, args.n_class, pretrained_model_name = None)
     target_trained_model = torch.load(target_weight_path + '/' + test_model_name  + '_load.pt')
@@ -591,10 +494,6 @@ def domain_adaptation(srcs_file_name, prev_srcs_file_name, tar_file_name, transf
         # relv_feat_arr, relv_src_data_arr, relv_src_label_arr = create_relv_src_clusters_old(dataloaders['combine_srcs'], dataloaders['tar'], transfer_model, relv_feat_arr, relv_src_data_arr, relv_src_label_arr, relv_sample_count, timestamp + '/' + test_model_name)
         # relv_feat_arr, relv_src_data_arr, relv_src_label_arr = create_relv_src_dic(dataloaders['combine_srcs'], dataloaders['tar'], transfer_model, relv_feat_arr, relv_src_data_arr, relv_src_label_arr, relv_sample_count)
 
-
-    # optimizer.load 'optimizer_state_dict': optimizer.state_dict()
-    # acc_test, acc_top2 = test(transfer_model, dataloaders['tar_test'], args.batch_size)
-    # if args.train_source:
     if args.train_source and not args.target_evaluation_only: 
         train_loader = dataloaders['combine_srcs']
         val_loader = dataloaders['combine_srcs_val']
@@ -604,8 +503,6 @@ def domain_adaptation(srcs_file_name, prev_srcs_file_name, tar_file_name, transf
         val_loader = dataloaders['tar_val']
         test_loader = dataloaders['tar_test']
 
-    # _data_arr, _prob_arr, _label_arr, _gt_arr = create_target_pl_dicts(transfer_model, train_loader, 0.86, args.batch_size, args.is_pain_dataset)
-
     acc = test(transfer_model, train_loader, args.batch_size, False, args.is_pain_dataset)
     acc_val = test(transfer_model, val_loader, args.batch_size, False, args.is_pain_dataset)
     acc_test = test(transfer_model, test_loader, args.batch_size, False, args.is_pain_dataset)
@@ -613,33 +510,6 @@ def domain_adaptation(srcs_file_name, prev_srcs_file_name, tar_file_name, transf
     experiment.log_metric("Val Accuracy", acc_val, step=count_subs)
     experiment.log_metric("Test Accuracy", acc_test, step=count_subs)
 
-    '''
-        - Ignore the subject/model which has the lowest accuracy then the best one
-        - Store the previous model/subject to initialize the next subject model  
-    '''
-    # _BEST_VAL_ACC = _BEST_VAL_ACC - 0.05
-    # if acc_val.item() > _BEST_VAL_ACC:
-    #     _BEST_VAL_ACC = acc_val.item()
-    #     is_ignore_model = False
-    #     prev_src_sub_model = test_model_name
-
-    #     experiment.log_metric("Val Accuracy", acc_val, step=count_subs)
-    #     experiment.log_metric("Test Accuracy", acc_test, step=count_subs)
-    # else:
-    #     is_ignore_model = True
-    #     prev_src_sub_model = temp_src_sub_model
-
-    #     print("\n ------------------ ------------------\n")
-    #     print("IGNORE MODEL/SUBJECT: ", test_model_name)
-    #     print("\n ------------------ ------------------\n")
-
-    '''
-        END
-    '''
-
-    # to generate t_sne graph
-    # _data_arr, _prob_arr, _label_arr, _gt_arr, tcl_clusters = create_target_pl_dicts(transfer_model, dataloaders['tar_val'], 0.00, args.batch_size, args.is_pain_dataset)
-    
     print('Source model: ', source_model_name)
     print('Target: ', target_subject)
     print('Target model: ', tar_model_name)
@@ -703,7 +573,7 @@ def train(dataloaders, model, optimizer, lamb, source_model_name, tar_model_name
         experiment.log_parameter("ImageNet weights", True)
         experiment.log_parameter("Pre-trained Model", args.pretrained_model)
         experiment.log_parameter("Source subjects combine", args.source_combined)
-        experiment.log_parameter("Subject selection Top k", args.top_k)
+        experiment.log_parameter("Subject selection Top_s", args.top_s)
         experiment.log_parameter("Time stamp", timestamp)
         experiment.log_parameter("Distance measure", dist_mapping(dist_measure))
         experiment.log_parameter("Train using N classifier", args.train_N_source_classes)
@@ -719,7 +589,6 @@ def train(dataloaders, model, optimizer, lamb, source_model_name, tar_model_name
         experiment.log_parameter("Selected relevant history samples:", relv_sample_count)
         experiment.log_parameter("Early_stop:", args.early_stop)
         
-
         # ------------------------------------------ ------------------------------------- #
         # Training of labeled multi-source data 
         #
@@ -732,11 +601,7 @@ def train(dataloaders, model, optimizer, lamb, source_model_name, tar_model_name
             # n_batch = min(len_source1_loader, len_source2_loader)
             # n_batch = min(len_combine_srcs_loader, len_target_loader)
             n_batch = len_combine_srcs_loader
-            print('\n ------ Start Training of Source Domain ------ \n')
-            # train_multi_model(args.source_epochs, model, source1_loader, source2_loader, optimizer, criterion, lamb, n_batch , args.early_stop, source_model_name, combine_srcs_val_loader, args.oracle_setting, train_source=True)
-
-            # train_multi_src_model_2(args.source_epochs, model, srcs_loader, optimizer, criterion, lamb, n_batch , args.early_stop, source_model_name, srcs_val_loader, args.oracle_setting, train_source=True)
-            
+            print('\n ------ Start Training of Source Domain ------ \n')            
             model, _ = train_multi_model(args.source_epochs, model, combine_srcs_loader, combine_srcs_loader, optimizer, criterion, lamb, n_batch , args.early_stop, source_model_name, combine_srcs_val_loader, target_weight_path, args.oracle_setting, train_source=args.train_source)
         
         # ------------------------------------------ ------------------------------------- #
@@ -782,7 +647,6 @@ def train(dataloaders, model, optimizer, lamb, source_model_name, tar_model_name
 
             n_batch = min(len_combine_srcs_loader, len_target_loader)
             model, each_sub_train_total_loss = train_multi_model(args.target_epochs, model, combine_srcs_loader, prev_srcs_loader, target_loader, optimizer, criterion, lamb, n_batch, args.early_stop, tar_model_name, target_val_loader, target_weight_path, args.oracle_setting, train_source=False)
-            # model, each_sub_train_total_loss = train_multi_model_all_srcs(args.target_epochs, model, combine_srcs_loader, prev_srcs_loader, target_loader, optimizer, criterion, lamb, n_batch, args.early_stop, tar_model_name, target_val_loader, target_weight_path, args.oracle_setting, train_source=False)
             
         return model, each_sub_train_total_loss
 def train_multi_model_only_src_sample(n_epoch, model, data_loader1, data_loader2, optimizer, 
@@ -959,7 +823,6 @@ def train_multi_model_only_src_sample(n_epoch, model, data_loader1, data_loader2
     train_total_loss_all_epochs = train_total_loss_all_epochs/n_epoch
     return model, train_total_loss_all_epochs
         
-
 def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader2, 
                       optimizer, criterion, lamb, n_batch , early_stop, trained_model_name, 
                       val_loader, target_weight_path, oracle_setting, train_source):
@@ -1004,9 +867,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
 
             count = count + 1  
 
-            ### --- *** defining for conf target samples
-            # domain2 = next(conf_tar_data_iter)
-
             ### --- *** Current Source Subject
             data_domain1, label_domain1 = src_domain
             data_domain1, label_domain1 = data_domain1.cuda(), label_domain1.cuda()
@@ -1017,8 +877,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
 
             ### --- *** Target Subject
             tar_domain = next(tar_data_iter)
-            # tar_data_domain, _ = tar_domain
-            # tar_data_domain = tar_data_domain.cuda()
 
             # -- Generate target PL in minibatch
             if train_source is False and oracle_setting is False:
@@ -1032,7 +890,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
                         calculate_tar_pl_ce = False
                         break
 
-            
              # defining for domain-2
             if train_source or oracle_setting:
                 data_domain2, label_domain2 = tar_domain
@@ -1045,63 +902,12 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
                     data_domain2, label_domain2 = tar_domain
                 
                 data_domain2, label_domain2 = data_domain2.cuda(), label_domain2.cuda()
-                # print(label_domain2)
-                
-                # data_domain2, _ = domain2
-                # data_domain2 = data_domain2.cuda()
-
-            # macs, params =profile(model, inputs=(data_domain1.float(), data_domain2.float()))
 
             # for training the custom dataset (PAIN DATASETS); I have added .float() otherwise removed it when using build-in dataset
             data_domain1 = data_domain1.float()
             data_domain2 = data_domain2.float()
             prev_data_domain = prev_data_domain.float()
             prev_label_domain = prev_label_domain.to(torch.int64)
-            # tar_data_domain = tar_data_domain.float()
-
-            # store feature vector and label into an feature_memory_bank
-            # domain1_feature = model.forward_features(data_domain1)
-            # domain2_feature = model.forward_features(data_domain2)
-            
-            # # # feat_memory_bank = np.concatenate((feat_memory_bank, np.column_stack((domain1_feature.cpu().detach().numpy(), label_domain1.cpu().detach().numpy()))), axis=0) if len(feat_memory_bank) > 0 else np.column_stack((domain1_feature.cpu().detach().numpy(), label_domain1.cpu().detach().numpy()))
-            
-            # feat_memory_bank = np.concatenate((feat_memory_bank, domain1_feature.cpu().detach().numpy()), axis=0) if len(feat_memory_bank) > 0 else domain1_feature.cpu().detach().numpy()
-            # gt_arr.extend(label_domain1.detach().cpu().numpy())
-
-            # feat_memory_bank_tar = np.concatenate((feat_memory_bank_tar, domain2_feature.cpu().detach().numpy()), axis=0) if len(feat_memory_bank_tar) > 0 else domain2_feature.cpu().detach().numpy()
-            # tar_arr.extend(np.full(16, 5))
-            # tar_arr.extend(label_domain2.detach().cpu().numpy())
-
-            # for i in range(0, n_class):
-            #     indices = [index for index, label in enumerate(label_domain1) if label == i]
-            #     indices2 = [index for index, label in enumerate(label_domain2) if label == i]
-            #     intra_class_feat_d1 = data_domain1[indices]
-            #     intra_class_feat_d2 = data_domain2[indices2]
-            #     intra_label = label_domain1[indices]
-
-            #     if len(data_domain2[indices2]) > 0 and len(data_domain1[indices]) > 0:
-            #         label_source_pred, transfer_loss, domain1_feature = model(intra_class_feat_d1, intra_class_feat_d2)
-            #         clf_loss = criterion(label_source_pred, intra_label)
-            #     elif len(data_domain1[indices]) > 0:
-            #         label_source_pred, transfer_loss, domain1_feature = model(intra_class_feat_d1, None)
-            #         clf_loss = criterion(label_source_pred, intra_label)
-            #     else:
-            #         clf_loss = 0
-            #         transfer_loss = None
-
-            #     transfer_loss = transfer_loss.detach().item() if transfer_loss is not None and transfer_loss.detach().item() == transfer_loss.detach().item() else 0 # to avoid 'NaN'
-            #     loss = loss + (clf_loss) + transfer_loss
-
-
-            # tensor = torch.randn(1, 3, 100, 100)
-            # start_t = time.time()
-            # model(tensor.cuda().float(), tensor.cuda().float())
-            # print("Training Time:")
-            # print(start_t)
-            # end_t = time.time() - start_t
-            # print(end_t)   
-
-            # optimizer.zero_grad()
 
             # calculate target PL loss only with conf samples
             clf_loss, prev_clf_loss, transfer_loss = 0, 0, 0
@@ -1116,20 +922,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
             else:
                 label_source_pred, prev_transfer_loss, _ = model(data_domain1, prev_data_domain)
                 clf_loss = criterion(label_source_pred, label_domain1)
-
-                # added prev source loss always
-                # prev_label_source_pred, _, _ = model(prev_data_domain, None)
-                # prev_clf_loss = criterion(prev_label_source_pred, prev_label_domain)
-
-            #----- ALL MMD: calculate mmd loss with prev source sub
-            # prev_label_source_pred, prev_transfer_loss, _ = model(prev_data_domain, data_domain1)
-            # prev_clf_loss = criterion(prev_label_source_pred, prev_label_domain)
-
-            # label_source_pred, transfer_loss, domain1_feature = model(data_domain1, data_domain2)
-            # clf_loss = criterion(label_source_pred, label_domain1)
-            # transfer_loss = transfer_loss.detach().item() if transfer_loss and transfer_loss.detach().item() == transfer_loss.detach().item() else 0 # to avoid 'NaN'
-
-            # loss = (clf_loss) + lamb * transfer_loss
                
             prev_transfer_loss = prev_transfer_loss.detach().item() if prev_transfer_loss and prev_transfer_loss.detach().item() == prev_transfer_loss.detach().item() else 0 # to avoid 'NaN'
             loss = (clf_loss) + prev_clf_loss + transfer_loss + (lamb*prev_transfer_loss)
@@ -1179,207 +971,6 @@ def train_multi_model(n_epoch, model, data_loader1, prev_src_loader, data_loader
                 train_loss_transfer_domain2 = transfer_loss_domain2.detach().item() + train_loss_transfer_domain2
                 train_loss_total_domain2 = loss_domain2.detach().item() + train_loss_total_domain2
 
-        acc = test(model, val_loader, args.batch_size, False, args.is_pain_dataset)
-        
-        if train_loss_clf_domain2 > 0:
-            print(f'Epoch: [{e:2d}/{n_epoch}], train_src_loss_clf: {train_loss_clf/n_batch:.4f}, train_tar_pl_loss_clf: {train_loss_clf_domain2/len(tar_loader):.4f}, transfer_loss: {train_loss_transfer/n_batch:.4f}, total_Loss: {train_loss_total/n_batch:.4f}, acc: {acc:.4f}')
-        else:
-            print(f'Epoch: [{e:2d}/{n_epoch}], train_src_loss_clf: {train_loss_clf/n_batch:.4f}, transfer_loss: {train_loss_transfer/n_batch:.4f}, total_Loss: {train_loss_total/n_batch:.4f}, acc: {acc:.4f}')
-
-        experiment.log_metric("Source-1 loss:", train_loss_clf/n_batch, epoch=e)
-        experiment.log_metric("Total loss:", train_loss_total/n_batch, epoch=e)
-        if train_loss_clf_domain2 > 0 and len(tar_loader) > 0:
-            experiment.log_metric("Target pl train loss:", train_loss_clf_domain2/len(tar_loader))
-
-        experiment.log_metric("Each epoch top 1 accuracy", acc, epoch=e)
-
-        # add up all the epochs total losses
-        train_total_loss_all_epochs = train_total_loss_all_epochs + train_loss_total/n_batch
-
-        if best_acc < acc:
-            best_acc = acc
-            torch.save(model.state_dict(), target_weight_path + '/' + trained_model_name + '.pkl')
-            # torch.save(model.state_dict(), config.CURRENT_DIR + '/' + trained_model_name + 'FER_model.pt')
-            torch.save({'model_state_dict': model.state_dict(), 'optimizer_state_dict': optimizer.state_dict()}, target_weight_path + '/' + trained_model_name + '_load.pt')
-            # save source feature maps
-            if len(srcs_avg_features) > 0:
-                torch.save(srcs_avg_features, target_weight_path + '/' + trained_model_name + '_features.pt')
-            experiment.log_metric("Val Target Best Accuracy", best_acc, epoch=e)
-            stop = 0
-        if stop >= early_stop:
-            break
-    print(total_mmd)
-
-    # visualize_tsne(clusters_by_label)
-    print("Best Val Acc: ", best_acc)
-    train_total_loss_all_epochs = train_total_loss_all_epochs/n_epoch
-    return model, train_total_loss_all_epochs
-
-def train_multi_model_all_srcs(n_epoch, model, data_loader1, prev_src_loader, data_loader2, optimizer, criterion, lamb, n_batch , early_stop, trained_model_name, val_loader, target_weight_path, oracle_setting, train_source):
-    best_acc = 0
-    stop = 0
-    srcs_avg_features = []
-    threshold = 0.91
-
-    calculate_tar_pl_ce = False
-    train_total_loss_all_epochs = 0
-
-    # SupConCriterion = SupConLoss()
-    current_forzen_model = copy.deepcopy(model)
-
-    # train_source = False # remove this line ; ITS ONLY THERE TO PERFORM EXPERIMENTS ON THE MMD LOSS FOR DOMAIN SHIFT FOR GDA FOR DGA-1033 PRESENTATION
-    for e in range(n_epoch):
-        stop += 1
-        train_loss_clf, train_loss_transfer, train_loss_total = 0, 0, 0
-        train_loss_clf_domain2, train_loss_transfer_domain2, train_loss_total_domain2 = 0, 0, 0
-        # calculate_tar_pl_ce = False
-
-        if train_source is False and oracle_setting is False:
-            if e % 20 == 0: # remove e != 0 and
-                # create a copy of a previously trained model to generate target PL
-                current_forzen_model = copy.deepcopy(model)
-
-                print("\n**** Threshold Reduced From: ", threshold)
-                threshold = threshold - 0.01      
-                print(" To: ", threshold)            
-
-        model.train()
-
-        count = 0
-        total_mmd = 0
-        srcs_avg_features = []
-        tar_counter = 0
-        
-        src_data_iter = TragetRestartableIterator(data_loader1)
-        tar_data_iter = TragetRestartableIterator(data_loader2)
-        n_batch = len(prev_src_loader)
-
-        for prev_data_domain, prev_label_domain in tqdm(prev_src_loader, leave=False):
-            count = count + 1  
-
-            ### --- *** defining for conf target samples
-            # domain2 = next(conf_tar_data_iter)
-
-            ### --- *** Current Source Subject
-            domain1 = next(src_data_iter)
-            data_domain1, label_domain1 = domain1
-            data_domain1, label_domain1 = data_domain1.cuda(), label_domain1.cuda()
-
-            ### --- *** Previous Source Subjects
-            prev_data_domain, prev_label_domain = prev_data_domain.cuda(), prev_label_domain.cuda()
-
-            ### --- *** Target Subject
-            tar_domain = next(tar_data_iter)
-
-            # -- Generate target PL in minibatch
-            if train_source is False and oracle_setting is False:
-                for i in range(0,1):
-                    # _data_arr, tar_exp_gt_labels, _, _ = BaseDataset.expand_target_dataset(_data_arr, _gt_arr, data_loader1, args.batch_size) if args.expand_tar_dataset else _data_arr, _gt_arr, _, _
-                    target_wth_gt_labels = TensorDataset(tar_domain[0], tar_domain[1])
-                    tar_loader, tar_val_loader = BaseDataset.load_target_data(target_wth_gt_labels, args.batch_size, split=False)
-                    conf_data_arr, _prob_arr, pl_label_arr, _gt_arr, _, _ = create_target_pl_dicts(current_forzen_model, tar_loader, threshold, args.batch_size, args.is_pain_dataset)
-
-                    calculate_tar_pl_ce = True
-                    if len(conf_data_arr) <= 0:
-                        calculate_tar_pl_ce = False
-                        break
-
-             # defining for domain-2
-            if train_source or oracle_setting:
-                data_domain2, label_domain2 = tar_domain
-                data_domain2, label_domain2 = data_domain2.cuda(), label_domain2.cuda()
-            else:
-                if calculate_tar_pl_ce:
-                    data_domain2, label_domain2 = tar_domain
-                    conf_data_domain2, conf_label_domain2 = torch.tensor(conf_data_arr).cuda(), torch.tensor(pl_label_arr).cuda()
-                else:
-                    data_domain2, label_domain2 = tar_domain
-                
-                data_domain2, label_domain2 = data_domain2.cuda(), label_domain2.cuda()
-
-            # for training the custom dataset (PAIN DATASETS); I have added .float() otherwise removed it when using build-in dataset
-            data_domain1 = data_domain1.float()
-            data_domain2 = data_domain2.float()
-            prev_data_domain = prev_data_domain.float()
-
-            ''' 
-            Test-1000: 
-                only considered target PL for adaptaion (MMD+PL) and does not converge on tar subject
-                label_source_pred, transfer_loss, domain1_feature = model(data_domain1, data_domain2 if calculate_tar_pl_ce else None)
-            '''
-
-            # calculate target PL loss only with conf samples
-            clf_loss, transfer_loss=0, 0
-            # if calculate_tar_pl_ce and count <= len(tar_loader) :
-            #     # calculate mmd loss with prev source sub
-            #     prev_label_source_pred, prev_transfer_loss, _ = model(prev_data_domain, data_domain1)
-            #     prev_clf_loss = criterion(prev_label_source_pred, prev_label_domain)
-
-            #     label_source_pred, transfer_loss, domain1_feature = model(data_domain1, conf_data_domain2)
-            #     clf_loss = criterion(label_source_pred, label_domain1)
-            #     transfer_loss = transfer_loss.detach().item() if transfer_loss and transfer_loss.detach().item() == transfer_loss.detach().item() else 0 # to avoid 'NaN'
-            # else:
-            #     label_source_pred, prev_transfer_loss, _ = model(data_domain1, prev_data_domain)
-            #     prev_clf_loss = criterion(label_source_pred, label_domain1)
-
-            # calculate mmd loss with prev source sub
-            prev_label_source_pred, prev_transfer_loss, _ = model(prev_data_domain, data_domain1)
-            prev_clf_loss = criterion(prev_label_source_pred, prev_label_domain)
-
-            label_source_pred, transfer_loss, domain1_feature = model(data_domain1, data_domain2)
-            clf_loss = criterion(label_source_pred, label_domain1)
-            transfer_loss = transfer_loss.detach().item() if transfer_loss and transfer_loss.detach().item() == transfer_loss.detach().item() else 0 # to avoid 'NaN'
-
-            # loss = (clf_loss) + lamb * transfer_loss
-               
-            prev_transfer_loss = prev_transfer_loss.detach().item() if prev_transfer_loss and prev_transfer_loss.detach().item() == prev_transfer_loss.detach().item() else 0 # to avoid 'NaN'
-            loss = (clf_loss) + prev_clf_loss + transfer_loss + (lamb*prev_transfer_loss)
-
-            total_mmd += transfer_loss 
-
-            # adding target loss with source loss
-            if train_source or oracle_setting:
-                label_pred_domain2, transfer_loss_domain2, domain2_feature  = model(data_domain2, data_domain1)
-                clf_loss_domain2 = criterion(label_pred_domain2, label_domain2)
-                loss_domain2 = (clf_loss_domain2) + lamb * transfer_loss_domain2
-
-                """
-                    combine source-1 and source-2 loss
-                """
-                # combine_loss = loss_domain2 + loss
-                combine_loss = clf_loss_domain2 + loss
-                optimizer.zero_grad()
-                combine_loss.backward()
-
-                if domain1_feature.shape == domain2_feature.shape:
-                    srcs_avg_features.append(torch.mean(torch.stack([domain1_feature, domain2_feature]), dim=0))
-
-            else:
-                if calculate_tar_pl_ce and count <= len(tar_loader) :
-                    label_pred_domain2, transfer_loss_domain2, domain2_feature  = model(conf_data_domain2, None)
-                    clf_loss_domain2 = criterion(label_pred_domain2, conf_label_domain2)
-                    loss = clf_loss_domain2 + loss
-                    
-                    optimizer.zero_grad()
-                    loss.backward()
-
-                    tar_counter = tar_counter + 1
-                    train_loss_clf_domain2 = clf_loss_domain2.detach().item() + train_loss_clf_domain2
-                else:
-                    optimizer.zero_grad()
-                    loss.backward()
-                
-            optimizer.step()
-            train_loss_clf = clf_loss.detach().item() if clf_loss else 0 + prev_clf_loss.detach().item() if prev_clf_loss else 0 + train_loss_clf
-            train_loss_transfer = transfer_loss + prev_transfer_loss + train_loss_transfer
-            train_loss_total = train_loss_clf + train_loss_transfer
-
-            # target loss_clf
-            if train_source:
-                train_loss_clf_domain2 = clf_loss_domain2.detach().item() + train_loss_clf_domain2
-                train_loss_transfer_domain2 = transfer_loss_domain2.detach().item() + train_loss_transfer_domain2
-                train_loss_total_domain2 = loss_domain2.detach().item() + train_loss_total_domain2
-        
         acc = test(model, val_loader, args.batch_size, False, args.is_pain_dataset)
         
         if train_loss_clf_domain2 > 0:
@@ -1410,6 +1001,7 @@ def train_multi_model_all_srcs(n_epoch, model, data_loader1, prev_src_loader, da
             break
     print(total_mmd)
 
+    # visualize_tsne(clusters_by_label)
     print("Best Val Acc: ", best_acc)
     train_total_loss_all_epochs = train_total_loss_all_epochs/n_epoch
     return model, train_total_loss_all_epochs
@@ -1509,522 +1101,6 @@ def measure_srcs_tar_dist(model, srcs_sub_loader, tar_sub_loader, dist_measure, 
     print(total_dist)
     return total_dist
 
-    # feat_memory_bank = np.concatenate((feat_memory_bank, np.column_stack((features.cpu().detach().numpy(), target.cpu().detach().numpy()))), axis=0) if len(feat_memory_bank) > 0 else np.column_stack((features.cpu().detach().numpy(), target.cpu().detach().numpy()))
-
-# def create_relv_src_dic(srcs_sub_loader, tar_sub_loader, model, relv_feat_dic, relv_sample_dic, relv_label_dic, relv_sample_count):
-#     model.eval()
-
-#     concat_tar_features = []
-#     concat_src_features = torch.tensor(relv_feat_dic.tolist()).to(device) if len(relv_feat_dic) > 0 else []
-#     relv_src_data = relv_sample_dic.tolist() if len(relv_sample_dic) > 0 else []
-#     relv_src_label = relv_label_dic.tolist() if len(relv_label_dic) > 0 else []
-#     with torch.no_grad():
-#         for (sources, target) in zip(srcs_sub_loader, tar_sub_loader):
-#             src_data, src_label = sources
-#             src_data, src_label = src_data.cuda().float(), src_label.cuda().float()
-#             src_feat = model.forward_features(src_data)
-#             concat_src_features = torch.cat([concat_src_features, src_feat], dim=0) if len(concat_src_features) > 0 else src_feat 
-#             # relv_src_data = torch.cat([relv_src_data, src_data], dim=0) if len(relv_src_data) > 0 else src_data
-#             relv_src_data.extend(src_data.detach().cpu().numpy())
-#             relv_src_label.extend(src_label.detach().cpu().numpy())
-
-#             tar_data, _ = target
-#             tar_data = tar_data.cuda().float()
-#             tar_feat = model.forward_features(tar_data)
-#             concat_tar_features = torch.cat([concat_tar_features, tar_feat], dim=0) if len(concat_tar_features) > 0 else tar_feat 
-
-#     mean_feature = torch.mean(concat_tar_features, dim=0)
-#     src_dist = torch.norm(concat_src_features - mean_feature, dim=1)
-#     sorted_src_dist, sorted_src_indices = torch.sort(src_dist)
-#     relv_indices = sorted_src_indices[:relv_sample_count]
-
-#     # include current samples into a relv dic
-#     # relv_sample_dic = torch.cat([relv_sample_dic, src_dist], dim=0) if len(src_dist) > 0 else src_dist
-
-#     relv_src_data_arr = np.array(relv_src_data)
-#     relv_src_data_arr = relv_src_data_arr[relv_indices.tolist()]
-#     relv_src_label_arr = np.array(relv_src_label)
-#     relv_src_label_arr = relv_src_label_arr[relv_indices.tolist()]
-
-#     relv_feat_arr = np.array(concat_src_features.cpu().numpy())
-#     relv_feat_arr = relv_feat_arr[relv_indices.tolist()]
-
-#     # relv_src_samples = {i.item(): relv_src_data[i].cpu().numpy() for i in relv_indices}
-
-#     return relv_feat_arr, relv_src_data_arr, relv_src_label_arr
-
-# def create_relv_src_clusters(srcs_sub_loader, tar_sub_loader, model, relv_feat_dic, relv_sample_dic, relv_label_dic, relv_sample_count, tar_name, is_before_adapt=False):
-#     model.eval()
-
-#     concat_tar_features = []
-#     curr_src_features = []
-#     prev_data_feat = []
-#     concat_src_features = torch.tensor(relv_feat_dic.tolist()).to(device) if len(relv_feat_dic) > 0 else []
-#     relv_src_data = relv_sample_dic.tolist() if len(relv_sample_dic) > 0 else []
-#     relv_src_label = relv_label_dic.tolist() if len(relv_label_dic) > 0 else []
-
-#     # count = 0
-#     # for prev_src in prev_srcs_loader_dic:
-#     #     if len(prev_srcs_loader_dic) == count:
-#     #         prev_data_iter = TragetRestartableIterator(prev_src)
-#     #     count = count + 1
-
-#     with torch.no_grad():
-#         for (sources, target) in zip(srcs_sub_loader, tar_sub_loader):
-#             src_data, src_label = sources
-#             src_data, src_label = src_data.cuda().float(), src_label.cuda().float()
-#             src_feat = model.forward_features(src_data)
-#             curr_src_features = torch.cat([curr_src_features, src_feat], dim=0) if len(curr_src_features) > 0 else src_feat 
-#             concat_src_features = torch.cat([concat_src_features, src_feat], dim=0) if len(concat_src_features) > 0 else src_feat 
-#             # relv_src_data = torch.cat([relv_src_data, src_data], dim=0) if len(relv_src_data) > 0 else src_data
-#             relv_src_data.extend(src_data.detach().cpu().numpy())
-#             relv_src_label.extend(src_label.detach().cpu().numpy())
-
-#             # prev_data = model.forward_features(prev_data_iter)
-#             # prev_data_feat = torch.cat([prev_data_feat, prev_data], dim=0) if len(prev_data_feat) > 0 else prev_data 
-
-#             tar_data, _ = target
-#             tar_data = tar_data.cuda().float()
-#             tar_feat = model.forward_features(tar_data)
-#             concat_tar_features = torch.cat([concat_tar_features, tar_feat], dim=0) if len(concat_tar_features) > 0 else tar_feat 
-
-#     # Define the number of clusters
-#     n_clusters = 2
-
-#     # Initialize KMeans
-#     kmeans = KMeans(n_clusters=n_clusters, random_state=42, algorithm='lloyd')
-#     concat_tar_features = concat_tar_features.cpu().numpy()
-#     concat_src_features = concat_src_features.cpu().numpy() # combining all the relevant + new src sb
-#     curr_src_features = curr_src_features.cpu().numpy()
-
-#     prev_src_feat = relv_feat_dic if len(relv_feat_dic) > 0 else curr_src_features[:relv_sample_count]
-
-
-#     # if is_only_tsne:
-#     # tsne_graph(concat_tar_features, curr_src_features.cpu().numpy())
-#     # return relv_feat_dic, relv_sample_dic, relv_label_dic
-
-#     # combined_feat = np.vstack([concat_tar_features, concat_src_features])
-
-#     # Fit the model and get the cluster labels
-#     kmeans.fit(concat_tar_features)
-#     labels = kmeans.labels_
-#     # Get the cluster centers
-#     centroids = kmeans.cluster_centers_
-
-#     print("\nTarget Centroid:", centroids)
-
-
-#     # Calculate/Re-calculating the distances of relv src dic with the target cluster centroid
-#     closest_centroids, distances = pairwise_distances_argmin_min(concat_src_features, centroids)
-#     # Sort distances and get feature indices
-#     sorted_indices = np.argsort(distances)
-#     # get the sorted top N previous src samples indices
-#     relv_indices = sorted_indices[:relv_sample_count].tolist()
-#     relv_src_data_arr = np.array(relv_src_data)
-#     relv_src_data_arr = relv_src_data_arr[relv_indices]
-#     relv_src_label_arr = np.array(relv_src_label)
-#     relv_src_label_arr = relv_src_label_arr[relv_indices]
-
-#     relv_feat_arr = np.array(concat_src_features)
-#     relv_feat_arr = relv_feat_arr[relv_indices]
-
-#     # relv_src_samples = {i.item(): relv_src_data[i].cpu().numpy() for i in relv_indices}
-
-#     # Print the distances
-#     # for i, distance in enumerate(distances):
-#     #     print(f"Data point {i} is {distance:.4f} units away from its cluster centroid.")
-
-#     # combined_data = np.vstack([concat_tar_features, centroids, concat_src_features])
-#     # combined_data = np.vstack([concat_tar_features, prev_data_feat, concat_src_features])
-#     # combined_data = np.vstack([concat_tar_features, prev_src_feat, curr_src_features, centroids])
-#     # updated_relv_data = np.vstack([concat_tar_features, relv_feat_arr, curr_src_features, centroids])
-
-#     plot_tsne_cluster(n_clusters, labels, True, tar_name, concat_tar_features, prev_src_feat, curr_src_features, centroids)
-#     plot_tsne_cluster(n_clusters, labels, False, tar_name, concat_tar_features, relv_feat_arr, curr_src_features, centroids)
-    
-
-#     # Combine original features, second features, and centroids for t-SNE
-#     # all_data = np.vstack([combined_feat, centroids])
-
-#     # Reduce dimensionality using t-SNE
-#     # tsne = TSNE(n_components=2, random_state=42)
-#     # combined_2d = tsne.fit_transform(combined_data)
-
-# ## ----------------------------------- -----------------------------------------##
-# # Separate the transformed data back into original features, second features, and centroids
-#     # original_features_2d = combined_2d[:concat_tar_features.shape[0]]
-#     # second_features_2d = combined_2d[concat_tar_features.shape[0]:concat_tar_features.shape[0] + concat_src_features.shape[0]]
-#     # centroids_2d = combined_2d[concat_tar_features.shape[0] + concat_src_features.shape[0]:]
-
-#     # # Plot the t-SNE visualization
-#     # plt.figure(figsize=(12, 8))
-
-#     # # Plot the original features with circles
-#     # plt.scatter(original_features_2d[:, 0], original_features_2d[:, 1], c=labels[:concat_tar_features.shape[0]], marker='o', alpha=0.6, label='Original Features')
-
-#     # # Plot the second features with squares
-#     # plt.scatter(second_features_2d[:, 0], second_features_2d[:, 1], c=labels[concat_tar_features.shape[0]:], marker='s', alpha=0.6, label='Second Features')
-
-#     # # Plot the centroids with a distinct marker
-#     # plt.scatter(centroids_2d[:, 0], centroids_2d[:, 1], c='red', marker='X', s=200, label='Centroids')
-# # ------------------------------------ --------------------------------------##
-#     # features_2d = tsne.fit_transform(concat_tar_features.cpu().numpy())
-
-#     # Separate the transformed features and centroids
-#     # *** Giving equal size to every features BCZ of same data in all three feature map. Note: change this in case of selecting diff prev top-N
-#     # features_2d = combined_2d[:concat_tar_features.shape[0]]
-#     # features_2d = combined_2d[:combined_feat.shape[0]]
-#     # centroids_2d = combined_2d[concat_tar_features.shape[0]:concat_tar_features.shape[0] + centroids.shape[0]]
-#     # second_features_2d = combined_2d[concat_tar_features.shape[0] + centroids.shape[0]:]
-
-#     # prev_2d = combined_2d[concat_tar_features.shape[0]:concat_tar_features.shape[0]+prev_src_feat.shape[0]]
-#     # second_features_2d = combined_2d[concat_tar_features.shape[0] + prev_src_feat.shape[0]:concat_tar_features.shape[0]+prev_src_feat.shape[0] + concat_tar_features.shape[0]]
-#     # centroids_2d = combined_2d[concat_tar_features.shape[0] + prev_src_feat.shape[0]+concat_tar_features.shape[0]:]
-    
-
-#     # Plot the t-SNE visualization
-#     # plt.figure(figsize=(10, 8))
-#     # for i in range(n_clusters):
-#     #     # Select points belonging to the current cluster
-#     #     cluster_points = features_2d[labels == i]
-#     #     plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Target Cluster {i}', alpha=0.6)
-
-#     # Plot the centroids
-#     # Plot the centroids in a distinct color and marker
-#     # plt.scatter(centroids_2d[:, 0], centroids_2d[:, 1], c='red', marker='x', s=200, label='Centroids')
-
-#     # plt.scatter(prev_2d[:, 0], prev_2d[:, 1], c='green', marker='o', alpha=0.3, label='Previous Relevent Features')
-
-#     # Plot the second set of features in a different color
-#     # plt.scatter(second_features_2d[:, 0], second_features_2d[:, 1], c='gray', marker='o', alpha=0.3, label='Second Features')
-
-#     # plt.title('t-SNE Visualization of Clusters')
-#     # plt.xlabel('t-SNE Component 1')
-#     # plt.ylabel('t-SNE Component 2')
-#     # plt.legend()
-#     # tsne_folder = 'relv_samples_clusters/'+ tar_name.split('/')[0]
-#     # if not os.path.exists(tsne_folder):
-#     #     os.makedirs(tsne_folder)
-
-#     # file_name = tsne_folder+'/'+tar_name.split('/')[1]+'_BE.png' if is_before_adapt else tsne_folder+'/'+tar_name.split('/')[1]+'AF_.png'
-#     # plt.savefig(file_name)
-#     # plt.show()
-    
-#     return relv_feat_arr, relv_src_data_arr, relv_src_label_arr
-
-# def create_relv_src_clus_cent(srcs_sub_loader, tar_sub_loader, model, prev_relv_samples_struc, relv_sample_count, tar_name, is_before_adapt=False):
-#     model.eval()
-
-#     concat_tar_features = []
-#     curr_src_features = []
-#     curr_src_data = []
-#     curr_src_label = []
-#     updated_relv_samples_struc = None
-#     # concat_src_features = torch.tensor(relv_feat_dic.tolist()).to(device) if len(relv_feat_dic) > 0 else []
-
-#     with torch.no_grad():
-#         for (sources, target) in zip(srcs_sub_loader, tar_sub_loader):
-#             src_data, src_label = sources
-#             src_data, src_label = src_data.cuda().float(), src_label.cuda().float()
-#             src_feat = model.forward_features(src_data)
-#             curr_src_features = torch.cat([curr_src_features, src_feat], dim=0) if len(curr_src_features) > 0 else src_feat 
-#             # concat_src_features = torch.cat([concat_src_features, src_feat], dim=0) if len(concat_src_features) > 0 else src_feat 
-#             # relv_src_data = torch.cat([relv_src_data, src_data], dim=0) if len(relv_src_data) > 0 else src_data
-#             curr_src_data.extend(src_data.detach().cpu().numpy())
-#             curr_src_label.extend(src_label.detach().cpu().numpy())
-
-#             # relv_src_data.extend(src_data.detach().cpu().numpy())
-#             # relv_src_label.extend(src_label.detach().cpu().numpy())
-
-#             # prev_data = model.forward_features(prev_data_iter)
-#             # prev_data_feat = torch.cat([prev_data_feat, prev_data], dim=0) if len(prev_data_feat) > 0 else prev_data 
-
-#             tar_data, _ = target
-#             tar_data = tar_data.cuda().float()
-#             tar_feat = model.forward_features(tar_data)
-#             concat_tar_features = torch.cat([concat_tar_features, tar_feat], dim=0) if len(concat_tar_features) > 0 else tar_feat 
-
-#     # Define the number of clusters
-#     n_clusters = 2
-
-#     concat_tar_features = concat_tar_features.cpu().numpy()
-#     # concat_src_features = concat_src_features.cpu().numpy() # combining all the relevant + new src sb
-#     curr_src_features = curr_src_features.cpu().numpy()
-
-#     # if is_only_tsne:
-#     # tsne_graph(concat_tar_features, curr_src_features.cpu().numpy())
-#     # return relv_feat_dic, relv_sample_dic, relv_label_dic
-
-#     # combined_feat = np.vstack([concat_tar_features, concat_src_features])
-
-#     # Fit the model and get the cluster labels
-#     kmeans = KMeans(n_clusters=n_clusters, random_state=42, algorithm='lloyd')
-#     kmeans.fit(concat_tar_features)
-#     labels = kmeans.labels_ 
-#     centroids = kmeans.cluster_centers_
-
-#     # print("\nTarget Centroid:", centroids)
-#     kmeans_curr_src = KMeans(n_clusters=n_clusters, random_state=42, algorithm='lloyd')
-#     kmeans_curr_src.fit(curr_src_features)
-#     labels_curr_src = kmeans_curr_src.labels_
-#     centroids_curr_src = kmeans_curr_src.cluster_centers_
-
-#     # Step 3: Calculate distances with every sample in new subject with its own centroids
-#     B_distances = cdist(curr_src_features, centroids_curr_src, 'euclidean')
-#     B_min_distances = B_distances.min(axis=1) # it picks the smallest distance of every point to the centroids 
-#     # Include features, given labels (B_L), and K-means labels in B_results
-#     B_results = [(curr_src_data[i], curr_src_features[i], curr_src_label[i], B_min_distances[i]) for i in range(len(curr_src_data))]
-#     B_sorted = sorted(B_results, key=lambda x: x[3])  # Sort by distance (now at index 4)
-
-#     # calculate the distance with the target centroid 
-#     distances_from_A = cdist([result[1] for result in B_sorted[:len(B_sorted)]], centroids, 'euclidean')
-#     distances_from_A = distances_from_A.min(axis=1)
-#     new_relv_samples_struc = [(B_sorted[i][0], B_sorted[i][1], B_sorted[i][2], distances_from_A[i]) for i in range(len(B_sorted))]
-
-#     '''
-#         Add up based on the distances from target centroid Prev Samples + New Samples
-
-#         prev_relv_samples_struc: store prev closest samples
-#         new_relv_samples_struc: store new src samples
-#         updated_relv_samples_struc: store updated list after combining with new_relv_samples_struc
-#     '''
-#     if prev_relv_samples_struc:
-#         # only taking first 500 samples that are most closer to src centroid and check if its closer to the target subject or not
-#         updated_prev_struc = prev_relv_samples_struc + new_relv_samples_struc[:500]
-#         updated_relv_samples_struc = sorted(updated_prev_struc, key=lambda x: x[3])
-
-#         prev_src_feat =[point[1] for point in prev_relv_samples_struc if point[1] is not None]
-#     else:
-#         updated_relv_samples_struc = new_relv_samples_struc[:500]
-#         prev_src_feat =[point[1] for point in updated_relv_samples_struc if point[1] is not None]
-
-#     if len(updated_relv_samples_struc) < relv_sample_count:
-#         relv_sample_count = len(updated_relv_samples_struc) 
-
-#     relv_feat_arr =[point[1] for point in updated_relv_samples_struc if point[1] is not None]
-
-#     plot_tsne_cluster(n_clusters, labels, True, tar_name, concat_tar_features, np.array(prev_src_feat), curr_src_features, centroids)
-#     plot_tsne_cluster(n_clusters, labels, False, tar_name, concat_tar_features, np.array(relv_feat_arr[:relv_sample_count]), curr_src_features, centroids)
-    
-#     return updated_relv_samples_struc[:relv_sample_count]
-
-# def create_relv_src_clus_dbscan(srcs_sub_loader, tar_sub_loader, model, prev_relv_samples_struc, relv_sample_count, tar_name, is_before_adapt=False):
-#     model.eval()
-
-#     concat_tar_features = []
-#     curr_src_features = []
-#     curr_src_data = []
-#     curr_src_label = []
-
-#     # count = 0
-#     # for prev_src in prev_srcs_loader_dic:
-#     #     if len(prev_srcs_loader_dic) == count:
-#     #         prev_data_iter = TragetRestartableIterator(prev_src)
-#     #     count = count + 1
-
-#     with torch.no_grad():
-#         for (sources, target) in zip(srcs_sub_loader, tar_sub_loader):
-#             src_data, src_label = sources
-#             src_data, src_label = src_data.cuda().float(), src_label.cuda().float()
-#             src_feat = model.forward_features(src_data)
-#             curr_src_features = torch.cat([curr_src_features, src_feat], dim=0) if len(curr_src_features) > 0 else src_feat 
-#             # concat_src_features = torch.cat([concat_src_features, src_feat], dim=0) if len(concat_src_features) > 0 else src_feat 
-#             # relv_src_data = torch.cat([relv_src_data, src_data], dim=0) if len(relv_src_data) > 0 else src_data
-
-#             curr_src_data.extend(src_data.detach().cpu().numpy())
-#             curr_src_label.extend(src_label.detach().cpu().numpy())
-
-#             # prev_data = model.forward_features(prev_data_iter)
-#             # prev_data_feat = torch.cat([prev_data_feat, prev_data], dim=0) if len(prev_data_feat) > 0 else prev_data 
-
-#             tar_data, _ = target
-#             tar_data = tar_data.cuda().float()
-#             tar_feat = model.forward_features(tar_data)
-#             concat_tar_features = torch.cat([concat_tar_features, tar_feat], dim=0) if len(concat_tar_features) > 0 else tar_feat 
-    
-#     concat_tar_features = concat_tar_features.cpu().numpy()
-#     # concat_src_features = concat_src_features.cpu().numpy() # combining all the relevant + new src sb
-#     curr_src_features = curr_src_features.cpu().numpy()
-    
-#     tar_centroids_dbscan, tar_dbscan_clusters, tar_labels_dbscan = apply_dbscan(concat_tar_features)
-#     src_centroids_dbscan, src_dbscan_clusters, src_labels_dbscan = apply_dbscan(curr_src_features)
-        
-#     # Step 3: Calculate distances with every sample in new subject with its own centroids
-#     B_distances = cdist(curr_src_features, src_centroids_dbscan, 'euclidean')
-#     B_min_distances = B_distances.min(axis=1) # it picks the smallest distance of every point to the centroids 
-#     # Include features, given labels (B_L), and K-means labels in B_results
-#     B_results = [(curr_src_data[i], curr_src_features[i], curr_src_label[i], B_min_distances[i]) for i in range(len(curr_src_data))]
-#     B_sorted = sorted(B_results, key=lambda x: x[3])  # Sort by distance (now at index 4)
-
-#     # calculate the distance with the target centroid 
-#     distances_from_A = cdist([result[1] for result in B_sorted[:len(B_sorted)]], tar_centroids_dbscan, 'euclidean')
-#     distances_from_A = distances_from_A.min(axis=1)
-#     new_relv_samples_struc = [(B_sorted[i][0], B_sorted[i][1], B_sorted[i][2], distances_from_A[i]) for i in range(len(B_sorted))]
-
-#     '''
-#         Add up based on the distances from target centroid Prev Samples + New Samples
-
-#         prev_relv_samples_struc: store prev closest samples
-#         new_relv_samples_struc: store new src samples
-#         updated_relv_samples_struc: store updated list after combining with new_relv_samples_struc
-#     '''
-#     if prev_relv_samples_struc:
-#         # only taking first 500 samples that are most closer to src centroid and check if its closer to the target subject or not
-#         updated_prev_struc = prev_relv_samples_struc + new_relv_samples_struc[:500]
-#         updated_relv_samples_struc = sorted(updated_prev_struc, key=lambda x: x[3])
-
-#         prev_src_feat =[point[1] for point in prev_relv_samples_struc if point[1] is not None]
-#     else:
-#         updated_relv_samples_struc = new_relv_samples_struc[:500]
-#         prev_src_feat =[point[1] for point in updated_relv_samples_struc if point[1] is not None]
-
-#     if len(updated_relv_samples_struc) < relv_sample_count:
-#         relv_sample_count = len(updated_relv_samples_struc) 
-
-#     relv_feat_arr =[point[1] for point in updated_relv_samples_struc if point[1] is not None]
-
-
-#     plot_dbscan_tsne(tar_dbscan_clusters, src_dbscan_clusters, True, tar_name, concat_tar_features, np.array(prev_src_feat), curr_src_features, tar_centroids_dbscan)
-#     plot_dbscan_tsne(tar_dbscan_clusters, src_dbscan_clusters, False, tar_name, concat_tar_features, np.array(relv_feat_arr[:relv_sample_count]), curr_src_features, tar_centroids_dbscan)
-    
-#     return updated_relv_samples_struc[:relv_sample_count]
-
-# def apply_dbscan(input_features):
-#     dbscan_eps = 5.5
-#     dbscan_minsam = 4
-#     while True:
-#         dbscan = DBSCAN(eps=dbscan_eps, min_samples=dbscan_minsam)
-#         dbscan_clusters = dbscan.fit_predict(input_features)
-#         if max(dbscan_clusters) > -1:
-#             break
-#         else:
-#             dbscan_eps = dbscan_eps - 1.0
-#             dbscan_minsam = dbscan_minsam - 1
-#             print("EPS reduce by 1:: ", dbscan_eps)
-#             print("Min Sample reduce by 1: ", dbscan_minsam)
-
-#     labels_dbscan = set(dbscan_clusters)
-#     labels_dbscan.discard(-1)
-#     centroids_dbscan = []
-#     for label in labels_dbscan:
-#         cluster_points = input_features[dbscan_clusters == label]
-#         centroid = np.mean(cluster_points, axis=0)
-#         centroids_dbscan.append(centroid)
-    
-#     return centroids_dbscan, dbscan_clusters, labels_dbscan
-
-# def plot_dbscan_tsne(tar_labels, src_labels, is_before_adapt, tar_name, concat_tar_features, prev_src_feat, curr_src_features, centroids):
-#     combined_data = np.vstack([concat_tar_features, prev_src_feat, curr_src_features, centroids])
-
-#     # Reduce dimensionality using t-SNE
-#     tsne = TSNE(n_components=2, random_state=42)
-#     combined_2d = tsne.fit_transform(combined_data)
-
-#     # Separate the transformed features and centroids
-#     # *** Giving equal size to every features BCZ of same data in all three feature map. Note: change this in case of selecting diff prev top-N
-#     features_2d = combined_2d[:concat_tar_features.shape[0]]
-#     prev_2d = combined_2d[concat_tar_features.shape[0]:concat_tar_features.shape[0]+prev_src_feat.shape[0]]
-#     second_features_2d = combined_2d[concat_tar_features.shape[0] + prev_src_feat.shape[0]:concat_tar_features.shape[0]+prev_src_feat.shape[0] + concat_tar_features.shape[0]]
-#     centroids_2d = combined_2d[concat_tar_features.shape[0] + prev_src_feat.shape[0]+concat_tar_features.shape[0]:]
-    
-
-#     # Plot the t-SNE visualization
-#     plt.figure(figsize=(10, 8))
-
-#     plt.scatter(features_2d[:, 0], features_2d[:, 1], c=tar_labels, cmap='viridis')
-#     # Plot the centroids
-#     # Plot the centroids in a distinct color and marker
-#     plt.scatter(centroids_2d[:, 0], centroids_2d[:, 1], c='red', marker='x', s=200, label='Centroids')
-
-#     plt.scatter(prev_2d[:, 0], prev_2d[:, 1], c='green', marker='o', alpha=0.3, label='Previous Relevent Features')
-
-#     # Plot the second set of features in a different color
-#     if is_before_adapt:
-#         plt.scatter(second_features_2d[:, 0], second_features_2d[:, 1], c='gray', marker='o', alpha=0.3, label='Second Features')
-
-#     plt.title('t-SNE Visualization of Clusters')
-#     plt.xlabel('t-SNE Component 1')
-#     plt.ylabel('t-SNE Component 2')
-#     plt.legend()
-#     tsne_folder = 'relv_samples_clusters/'+ tar_name.split('/')[0]
-#     if not os.path.exists(tsne_folder):
-#         os.makedirs(tsne_folder)
-
-#     file_name = tsne_folder+'/'+tar_name.split('/')[1]+'_BE.png' if is_before_adapt else tsne_folder+'/'+tar_name.split('/')[1]+'AF_.png'
-#     plt.savefig(file_name)
-
-
-# def plot_tsne_cluster(n_clusters, labels, is_before_adapt, tar_name, concat_tar_features, prev_src_feat, curr_src_features, centroids):
-#     combined_data = np.vstack([concat_tar_features, prev_src_feat, curr_src_features, centroids])
-    
-#     # Combine original features, second features, and centroids for t-SNE
-#     # all_data = np.vstack([combined_feat, centroids])
-
-#     # Reduce dimensionality using t-SNE
-#     tsne = TSNE(n_components=2, random_state=42)
-#     combined_2d = tsne.fit_transform(combined_data)
-# ## ----------------------------------- -----------------------------------------##
-# # Separate the transformed data back into original features, second features, and centroids
-#     # original_features_2d = combined_2d[:concat_tar_features.shape[0]]
-#     # second_features_2d = combined_2d[concat_tar_features.shape[0]:concat_tar_features.shape[0] + concat_src_features.shape[0]]
-#     # centroids_2d = combined_2d[concat_tar_features.shape[0] + concat_src_features.shape[0]:]
-
-#     # # Plot the t-SNE visualization
-#     # plt.figure(figsize=(12, 8))
-
-#     # # Plot the original features with circles
-#     # plt.scatter(original_features_2d[:, 0], original_features_2d[:, 1], c=labels[:concat_tar_features.shape[0]], marker='o', alpha=0.6, label='Original Features')
-
-#     # # Plot the second features with squares
-#     # plt.scatter(second_features_2d[:, 0], second_features_2d[:, 1], c=labels[concat_tar_features.shape[0]:], marker='s', alpha=0.6, label='Second Features')
-
-#     # # Plot the centroids with a distinct marker
-#     # plt.scatter(centroids_2d[:, 0], centroids_2d[:, 1], c='red', marker='X', s=200, label='Centroids')
-# # ------------------------------------ --------------------------------------##
-#     # features_2d = tsne.fit_transform(concat_tar_features.cpu().numpy())
-
-#     # Separate the transformed features and centroids
-#     # *** Giving equal size to every features BCZ of same data in all three feature map. Note: change this in case of selecting diff prev top-N
-#     features_2d = combined_2d[:concat_tar_features.shape[0]]
-#     # features_2d = combined_2d[:combined_feat.shape[0]]
-#     # centroids_2d = combined_2d[concat_tar_features.shape[0]:concat_tar_features.shape[0] + centroids.shape[0]]
-#     # second_features_2d = combined_2d[concat_tar_features.shape[0] + centroids.shape[0]:]
-
-#     prev_2d = combined_2d[concat_tar_features.shape[0]:concat_tar_features.shape[0]+prev_src_feat.shape[0]]
-#     second_features_2d = combined_2d[concat_tar_features.shape[0] + prev_src_feat.shape[0]:concat_tar_features.shape[0]+prev_src_feat.shape[0] + concat_tar_features.shape[0]]
-#     centroids_2d = combined_2d[concat_tar_features.shape[0] + prev_src_feat.shape[0]+concat_tar_features.shape[0]:]
-    
-
-#     # Plot the t-SNE visualization
-#     plt.figure(figsize=(10, 8))
-#     # for i in range(n_clusters):
-#     #     # Select points belonging to the current cluster
-#     #     cluster_points = features_2d[labels == i]
-#     #     plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Target Cluster {i}', alpha=0.6)
-
-#     plt.scatter(features_2d[:, 0], features_2d[:, 1], c=labels, cmap='viridis')
-#     # Plot the centroids
-#     # Plot the centroids in a distinct color and marker
-#     plt.scatter(centroids_2d[:, 0], centroids_2d[:, 1], c='red', marker='x', s=200, label='Centroids')
-
-#     plt.scatter(prev_2d[:, 0], prev_2d[:, 1], c='green', marker='o', alpha=0.3, label='Previous Relevent Features')
-
-#     # Plot the second set of features in a different color
-#     if is_before_adapt:
-#         plt.scatter(second_features_2d[:, 0], second_features_2d[:, 1], c='gray', marker='o', alpha=0.3, label='Second Features')
-
-#     plt.title('t-SNE Visualization of Clusters')
-#     plt.xlabel('t-SNE Component 1')
-#     plt.ylabel('t-SNE Component 2')
-#     plt.legend()
-#     tsne_folder = 'relv_samples_clusters/'+ tar_name.split('/')[0]
-#     if not os.path.exists(tsne_folder):
-#         os.makedirs(tsne_folder)
-
-#     file_name = tsne_folder+'/'+tar_name.split('/')[1]+'_BE.png' if is_before_adapt else tsne_folder+'/'+tar_name.split('/')[1]+'AF_.png'
-#     plt.savefig(file_name)
-
 def test(model, target_test_loader, batch_size, top_N_tar_evaluate=False, is_pain_dataset=False):
     model.eval()
     correct = 0
@@ -2061,170 +1137,6 @@ def test(model, target_test_loader, batch_size, top_N_tar_evaluate=False, is_pai
         
     return acc_top1
 
-# class TransferNet(nn.Module):
-#     def __init__(self, num_class, base_net, transfer_loss='coral', use_bottleneck=False, bottleneck_width=256, width=1024): #1024
-#         super(TransferNet, self).__init__()
-#         if base_net == 'resnet50':
-#             self.base_network = ResNet50Fc()
-#         elif base_net == 'resnet18':
-#             self.base_network = ResNet18Fc()
-#         else:
-#             # Your own basenet
-#             return
-#         self.use_bottleneck = use_bottleneck
-#         self.transfer_loss = transfer_loss
-#         bottleneck_list = [nn.Linear(self.base_network.output_num()
-#         , bottleneck_width), nn.BatchNorm1d(bottleneck_width), nn.ReLU(), nn.Dropout(0.5)]
-#         self.bottleneck_layer = nn.Sequential(*bottleneck_list)
-
-#         classifier_layer_list = [nn.Linear(self.base_network.output_num(), width), nn.ReLU(), nn.Dropout(0.5),
-#                                  nn.Linear(width, num_class)]  
-
-#         # classifier_layer_list = [nn.Linear(4608, width), nn.ReLU(), nn.Dropout(0.5),
-#         #                          nn.Linear(width, num_class)]
-#         self.classifier_layer = nn.Sequential(*classifier_layer_list)
-
-#         self.bottleneck_layer[0].weight.data.normal_(0, 0.00005)
-#         self.bottleneck_layer[0].bias.data.fill_(0.1)
-#         for i in range(2):
-#             self.classifier_layer[i * 3].weight.data.normal_(0, 0.01)
-#             self.classifier_layer[i * 3].bias.data.fill_(0.0)
-
-#     def forward(self, source, target):
-#         source = self.base_network(source)
-#         target = self.base_network(target) if target is not None else None
-#         source_clf = self.classifier_layer(source)
-#         if self.use_bottleneck:
-#             source = self.bottleneck_layer(source)
-#             target = self.bottleneck_layer(target) if target is not None else None
-#         transfer_loss = self.adapt_loss(source, target, self.transfer_loss) if target is not None else None
-#         # transfer_loss = 0
-#         return source_clf, transfer_loss, source
-
-#     # def forward(self, source):
-#     #     source = self.base_network(source)
-#     #     # target = self.base_network(target) if target is not None else None
-#     #     source_clf = self.classifier_layer(source)
-#     #     if self.use_bottleneck:
-#     #         source = self.bottleneck_layer(source)
-#     #         # target = self.bottleneck_layer(target) if target is not None else None
-#     #     # transfer_loss = self.adapt_loss(source, target, self.transfer_loss) if target is not None else None
-#     #     transfer_loss = 0
-#     #     return source_clf, transfer_loss, source
-    
-#     def forward_features(self, domain):
-#         domain_fea = self.base_network(domain)
-#         # target = self.base_network(target) if target is not None else None
-#         # source_clf = self.classifier_layer(source)
-#         if self.use_bottleneck:
-#             domain_fea = self.bottleneck_layer(domain_fea)
-#             # target = self.bottleneck_layer(target) if target is not None else None
-#         # transfer_loss = self.adapt_loss(source, target, self.transfer_loss) if target is not None else None
-#         return domain_fea
-
-#     def forward_tsne(self, dataset):
-#         dataset = self.base_network(dataset)
-#         if self.use_bottleneck:
-#             dataset = self.bottleneck_layer(dataset)
-#         return dataset
-
-#     def predict(self, x):
-#         features = self.base_network(x)
-#         clf = self.classifier_layer(features)
-#         return clf
-
-#     def adapt_loss(self, X, Y, adapt_loss):
-#         """Compute adaptation loss, currently we support mmd and coral
-
-#         Arguments:
-#             X {tensor} -- source matrix
-#             Y {tensor} -- target matrix
-#             adapt_loss {string} -- loss type, 'mmd' or 'coral'. You can add your own loss
-
-#         Returns:
-#             [tensor] -- adaptation loss tensor
-#         """
-#         if adapt_loss == 'mmd':
-#             mmd_loss = MMD_loss()
-#             loss = mmd_loss(X, Y)
-#         elif adapt_loss == 'coral':
-#             loss = CORAL_loss.coral_loss(X, Y)
-#             # loss = coral_loss(X, Y)
-#         else:
-#             # Your own loss
-#             loss = 0
-#         return loss
-
-# scale and move the coordinates so they fit [0; 1] range
-# def scale_to_01_range(x):
-#     # compute the distribution range
-#     value_range = (np.max(x) - np.min(x))
-
-#     # move the distribution so that it starts from zero
-#     # by extracting the minimal value from all its values
-#     starts_from_zero = x - np.min(x)
-
-#     # make the distribution fit [0; 1] by dividing by its range
-#     return starts_from_zero / value_range
-
-# def plot_tsne_graph(X, Y, label_domain1):
-#     # We want to get TSNE embedding with 2 dimensions
-#     n_components = 2
-
-#     # features = np.concatenate((X, Y))
-#     # b, c, nx, ny = X.shape
-#     # features = X.reshape((b,nx*ny))
-#     X = X[:300]
-#     label_domain1 = label_domain1[:300]
-#     tsne = TSNE(n_components, n_iter=2000, perplexity = 5, verbose=1, random_state=25663214, init="pca")
-#     tsne_result = tsne.fit_transform(X)
-#     tsne_result.shape
-    
-#     # extract x and y coordinates representing the positions of the images on T-SNE plot
-#     tx = tsne_result[:, 0]
-#     ty = tsne_result[:, 1]
-
-#     df = pd.DataFrame()
-#     df["y"] = label_domain1.tolist()
-#     df["comp-1"] = tsne_result[:,0]
-#     df["comp-2"] = tsne_result[:,1]
-
-#     # print(df.y.tolist())
-#     # sns.scatterplot(x="comp-1", y="comp-2", hue=df.y.tolist(),
-#     #             palette=sns.color_palette("hls", 7),
-#     #             data=df).set(title="FER data T-SNE projection") 
-    
-#     tx = scale_to_01_range(tx)
-#     ty = scale_to_01_range(ty)
-
-#     # # initialize a matplotlib plot
-#     fig = plt.figure()
-#     ax = fig.add_subplot(111)
-#     colors_per_class = [0,1,2,3,4,5,6]
-#     color=['brown','blue','green','purple', 'pink', 'red', 'magenta', 'gray']
-#     # for every class, we'll add a scatter plot separately
-#     for label in colors_per_class:
-#         # find the samples of the current class in the data
-#         indices = [i for i, l in enumerate(label_domain1) if l == label]
-    
-#         # extract the coordinates of the points of this class only
-#         current_tx = np.take(tx, indices)
-#         current_ty = np.take(ty, indices)
-    
-#         # convert the class color to matplotlib format
-#         # color = np.array(colors_per_class[label], dtype=np.float) / 255
-    
-#         # add a scatter plot with the corresponding color and label
-#         ax.scatter(current_tx, current_ty, label=label, color=color[label])
-    
-#     # build a legend using the labels we set previously
-#     ax.legend(loc='best')
-    
-#     # finally, show the plot
-#     # plt.savefig('tsne_source_raf_fer.png')
-#     plt.savefig('tsne_tar_affectnet.png')
-#     plt.show()
-
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description='Train a network on FER')
     arg_parser.add_argument('--src_train_datasets_path', type=str, default=config.BIOVID_SUBS_PATH)
@@ -2235,7 +1147,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--pretrained_model', type=str, default='mcmaster_trained_model')
     arg_parser.add_argument('--batch_size', type=int, default=16)    # 1 only because JAFFE has small dataset
     arg_parser.add_argument('--source_epochs', type=int, default=20)
-    arg_parser.add_argument('--target_epochs', type=int, default=5)
+    arg_parser.add_argument('--target_epochs', type=int, default=30)
     arg_parser.add_argument('--early_stop', type=int, default=20)
     arg_parser.add_argument('--single_best', type=str, default=False)
     arg_parser.add_argument('--train_model_wo_adaptation', type=str, default=False)
@@ -2250,9 +1162,8 @@ if __name__ == '__main__':
     arg_parser.add_argument('--load_prev_source_model', type=bool, default=True)
     arg_parser.add_argument('--accumulate_prev_source_subs', type=bool, default=True)
 
-    arg_parser.add_argument('--tar_subject', type=int, help='Target subject number', default=9)
+    arg_parser.add_argument('--tar_subject', type=int, help='Target subject number', default=4)
     arg_parser.add_argument('--expand_tar_dataset', type=bool, default=False)
-    # arg_parser.add_argument('--experiment_description', type=str, default='Select CS closest source samples and use for target adaptation')
 
     arg_parser.add_argument('--experiment_description', type=str, default='2loaders CS threshold=0.9. create src & target clusters dbscan. *Add tar PL in minibatch. *MMD Conf tar samples.**') # create src and target clusters k-means *Add prev src CE 
 
@@ -2264,7 +1175,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--source_combined', type=str, default=False)
     arg_parser.add_argument('--is_pain_dataset', type=bool, default=True)
     arg_parser.add_argument('--dist_measure', type=str, default=config.COSINE_SIMILARITY)
-    arg_parser.add_argument('--top_k', type=int, default=20)
+    arg_parser.add_argument('--top_s', type=int, default=11)
     arg_parser.add_argument('--n_class', type=int, default=2) # 2 for pain Biovid -- n_class = 77: to train a classifier with N source subject classes
     arg_parser.add_argument('--n_class_N_src', type=int, default=77)
     arg_parser.add_argument('--top_rev_src_sam', type=int, default=31000)
@@ -2293,5 +1204,5 @@ if __name__ == '__main__':
     # 2. 121-vw121
     # 3. 123-jh123
     # 4. 115-jy115
-    
+    # print("\n\n*** Remove Detached =============\n\n ")
     main(args)
