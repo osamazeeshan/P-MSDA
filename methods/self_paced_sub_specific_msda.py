@@ -722,7 +722,6 @@ def train_multi_model_only_src_sample(n_epoch, model, data_loader1, data_loader2
             
             data_domain2, label_domain2 = data_domain2.cuda(), label_domain2.cuda()
 
-            # for training the custom dataset (PAIN DATASETS); I have added .float() otherwise removed it when using build-in dataset
             data_domain1 = data_domain1.float()
             data_domain2 = data_domain2.float()
 
@@ -736,14 +735,9 @@ def train_multi_model_only_src_sample(n_epoch, model, data_loader1, data_loader2
                 clf_loss = criterion(label_source_pred, label_domain1)
 
             # loss = (clf_loss) + lamb * transfer_loss
-            transfer_loss = transfer_loss.detach().item() if transfer_loss and transfer_loss.detach().item() == transfer_loss.detach().item() else 0 # to avoid 'NaN'
             loss = (clf_loss) + transfer_loss
 
-            
-            # loss = (clf_loss) 
-
             total_mmd += transfer_loss 
-            # loss.backward()
 
             # adding target loss with source loss
             if train_source or oracle_setting:
@@ -1162,7 +1156,7 @@ if __name__ == '__main__':
     arg_parser.add_argument('--load_prev_source_model', type=bool, default=True)
     arg_parser.add_argument('--accumulate_prev_source_subs', type=bool, default=True)
 
-    arg_parser.add_argument('--tar_subject', type=int, help='Target subject number', default=4)
+    arg_parser.add_argument('--tar_subject', type=int, help='Target subject number', default=3)
     arg_parser.add_argument('--expand_tar_dataset', type=bool, default=False)
 
     arg_parser.add_argument('--experiment_description', type=str, default='2loaders CS threshold=0.9. create src & target clusters dbscan. *Add tar PL in minibatch. *MMD Conf tar samples.**') # create src and target clusters k-means *Add prev src CE 
@@ -1175,13 +1169,13 @@ if __name__ == '__main__':
     arg_parser.add_argument('--source_combined', type=str, default=False)
     arg_parser.add_argument('--is_pain_dataset', type=bool, default=True)
     arg_parser.add_argument('--dist_measure', type=str, default=config.COSINE_SIMILARITY)
-    arg_parser.add_argument('--top_s', type=int, default=11)
+    arg_parser.add_argument('--top_s', type=int, default=20)
     arg_parser.add_argument('--n_class', type=int, default=2) # 2 for pain Biovid -- n_class = 77: to train a classifier with N source subject classes
     arg_parser.add_argument('--n_class_N_src', type=int, default=77)
     arg_parser.add_argument('--top_rev_src_sam', type=int, default=31000)
     arg_parser.add_argument('--train_w_rand_src_sm', type=bool, default=False)
     arg_parser.add_argument('--train_w_src_sm', type=bool, default=False)
-    arg_parser.add_argument('--cs_threshold', type=float, default=0.90)
+    arg_parser.add_argument('--cs_threshold', type=float, default=0.80)
     
     arg_parser.add_argument('--back_bone', default="resnet18", type=str)
     args = arg_parser.parse_args()
